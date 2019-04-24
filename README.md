@@ -36,14 +36,16 @@ For example::
 This works even for commands that ask for passwords or other input outside of
 the normal stdio streams.
 
-Credits: Noah Spurrier, Richard Holden, Marco Molteni, Kimberley Burchett,
-Robert Stone, Hartmut Goebel, Chad Schroeder, Erick Tryzelaar, Dave Kirby, Ids
-vander Molen, George Todd, Noel Taylor, Nicolas D. Cesar, Alexander Gattin,
-Geoffrey Marshall, Francisco Lourenco, Glen Mabey, Karthik Gurusamy, Fernando
-Perez, Corey Minyard, Jon Cohen, Guillaume Chazarain, Andrew Ryan, Nick
-Craig-Wood, Andrew Stone, Jorgen Grahn (Let me know if I forgot anyone.)
+## Wexpect
 
-Free, open source, and all that good stuff.
+Wexpect is a one-file code developed at University of Washington. There are several copy of this code,
+with very few (almost none) documentation integration.
+
+Here are some useful links:
+ - https://gist.github.com/anthonyeden/8488763
+ - https://mediarealm.com.au/articles/python-pexpect-windows-wexpect/
+
+This repo tries to fix these limitations.
 
 ## Installation and limitation of wexpect
 
@@ -52,6 +54,8 @@ Current version does *not* work on python-3.x. You need to use **python 2.x** to
 One (non stanbdard) package, **pypiwin32** needed to use wexpect.
 
     pip install pypiwin32
+    
+Dropping the wexpect.py file into your working directory is usually good enough instead of installing.
     
 ## Usage
 
