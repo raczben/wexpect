@@ -2,6 +2,7 @@
 
 wexpect is a Windows alternative of [pexpect](https://pexpect.readthedocs.io/en/stable/).
 
+---
 ## pexpect
 
 Pexpect is a Python module for spawning child applications and controlling
@@ -36,6 +37,7 @@ For example::
 This works even for commands that ask for passwords or other input outside of
 the normal stdio streams.
 
+---
 ## Wexpect
 
 Wexpect is a one-file code developed at University of Washington. There are several copy of this code,
@@ -47,16 +49,28 @@ Here are some useful links:
 
 This repo tries to fix these limitations.
 
+---
 ## Installation and limitation of wexpect
 
 Current version does *not* work on python-3.x. You need to use **python 2.x** to use wexpect.
 
-One (non stanbdard) package, **pypiwin32** needed to use wexpect.
+### Standard installation
+
+This version is uploaded to pypi server so you can easily install with pip:
+
+    pip install wexpect
+    
+### Manual installation
+
+Because this is a tiny project dropping the wexpect.py file into your working directory is usually
+good enough instead of installing. However in this case you need to install manually the one dependence.
+
+One (non stanbdard) package, **pypiwin32** is needed by wexpect.
 
     pip install pypiwin32
     
-Dropping the wexpect.py file into your working directory is usually good enough instead of installing.
-    
+
+---
 ## Usage
 
 See pexpect examples for usage.
