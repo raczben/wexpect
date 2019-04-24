@@ -1,53 +1,53 @@
-# wexpect
+# **wexpect**
 
-wexpect is a Windows alternative of [pexpect](https://pexpect.readthedocs.io/en/stable/).
+*Wexpect* is a Windows variant of [pexpect](https://pexpect.readthedocs.io/en/stable/).
+
+*Pexpect* is a Python module for spawning child applications and controlling
+them automatically.
+
+## **Install**
+
+    pip install wexpect
+    
+Note that only python 2.x is supported.
+    
+## **Usage**
+
+To interract with a child process use `spawn` method:
+
+    child = pexpect.spawn('C:\Windows\System32\cmd.exe')
+    child.expect('>')
+    child.sendline('ls')
+    child.expect('>')
+
+For more information see [examples](./examples) folder.
 
 ---
-## pexpect
+## What is it?
 
-Pexpect is a Python module for spawning child applications and controlling
-them automatically. Pexpect can be used for automating interactive applications
+Wexpect is a Python module for spawning child applications and controlling
+them automatically. Wexpect can be used for automating interactive applications
 such as ssh, ftp, passwd, telnet, etc. It can be used to a automate setup
 scripts for duplicating software package installations on different servers. It
-can be used for automated software testing. Pexpect is in the spirit of Don
-Libes' Expect, but Pexpect is pure Python. Other Expect-like modules for Python
-require TCL and Expect or require C extensions to be compiled. Pexpect does not
-use C, Expect, or TCL extensions. It should work on any platform that supports
-the standard Python pty module. The Pexpect interface focuses on ease of use so
-that simple tasks are easy.
+can be used for automated software testing. Wexpect is in the spirit of Don
+Libes' Expect, but Wexpect is pure Python. Other Expect-like modules for Python
+require TCL and Expect or require C extensions to be compiled. Wexpect does not
+use C, Expect, or TCL extensions. 
 
-There are two main interfaces to Pexpect -- the function, run() and the class,
-spawn. You can call the run() function to execute a command and return the
-output. This is a handy replacement for os.system().
+Original Pexpect should work on any platform that supports the standard Python pty module. While
+Wexpect works on Windows platforms. The Wexpect interface focuses on ease of use so that simple
+tasks are easy.
 
-For example::
 
-    pexpect.run('ls -la')
+### History
 
-The more powerful interface is the spawn class. You can use this to spawn an
-external child command and then interact with the child by sending lines and
-expecting responses.
+Wexpect is a one-file code developed at University of Washington. There are several
+[copy](https://gist.github.com/anthonyeden/8488763) and
+[reference](https://mediarealm.com.au/articles/python-pexpect-windows-wexpect/)
+to this code with very few (almost none) documentation nor integration.
 
-For example::
+This repo tries to fix these limitations, with a few example code and pypi integration.
 
-    child = pexpect.spawn('scp foo myname@host.example.com:.')
-    child.expect ('Password:')
-    child.sendline (mypassword)
-
-This works even for commands that ask for passwords or other input outside of
-the normal stdio streams.
-
----
-## Wexpect
-
-Wexpect is a one-file code developed at University of Washington. There are several copy of this code,
-with very few (almost none) documentation integration.
-
-Here are some useful links:
- - https://gist.github.com/anthonyeden/8488763
- - https://mediarealm.com.au/articles/python-pexpect-windows-wexpect/
-
-This repo tries to fix these limitations.
 
 ---
 ## Installation and limitation of wexpect
@@ -69,8 +69,3 @@ One (non stanbdard) package, **pypiwin32** is needed by wexpect.
 
     pip install pypiwin32
     
-
----
-## Usage
-
-See pexpect examples for usage.
