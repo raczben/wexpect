@@ -105,7 +105,7 @@ except ImportError, e:
 A critical module was not found. Probably this operating system does not
 support it. Pexpect is intended for UNIX-like operating systems.""")
 
-__version__ = '2.3'
+__version__ = '2.3.1'
 __revision__ = '$Revision: 399 $'
 __all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'which',
     'split_command_line', '__version__', '__revision__']
@@ -178,32 +178,25 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
     The run() function can often be used instead of creating a spawn instance.
     For example, the following code uses spawn::
 
-        from pexpect import *
         child = spawn('scp foo myname@host.example.com:.')
         child.expect ('(?i)password')
         child.sendline (mypassword)
 
     The previous code can be replace with the following::
 
-        from pexpect import *
-        run ('scp foo myname@host.example.com:.', events={'(?i)password': mypassword})
-
     Examples
     ========
 
     Start the apache daemon on the local machine::
 
-        from pexpect import *
         run ("/usr/local/apache/bin/apachectl start")
 
     Check in a file using SVN::
 
-        from pexpect import *
         run ("svn ci -m 'automatic commit' my_file.py")
 
     Run a command and capture exit status::
 
-        from pexpect import *
         (command_output, exitstatus) = run ('ls -l /bin', withexitstatus=1)
 
     Tricky Examples
@@ -216,11 +209,6 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
 
     This will start mencoder to rip a video from DVD. This will also display
     progress ticks every 5 seconds as it runs. For example::
-
-        from pexpect import *
-        def print_ticks(d):
-            print d['event_count'],
-        run ("mencoder dvd://1 -o video.avi -oac copy -ovc copy", events={TIMEOUT:print_ticks}, timeout=5)
 
     The 'events' argument should be a dictionary of patterns and responses.
     Whenever one of the patterns is seen in the command out run() will send the
@@ -1517,7 +1505,6 @@ class spawn_unix (object):
         window size to change when the parent's window size changes then do
         something like the following example::
 
-            import pexpect, struct, fcntl, termios, signal, sys
             def sigwinch_passthrough (sig, data):
                 s = struct.pack("HHHH", 0, 0, 0, 0)
                 a = struct.unpack('hhhh', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ , s))
@@ -2941,4 +2928,7 @@ def split_command_line(command_line):
     if arg != '':
         arg_list.append(arg)
     return arg_list
+
+
+
 

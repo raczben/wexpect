@@ -4,6 +4,11 @@ import sys
 from shutil import rmtree
 import setuptools
 
+here = os.path.abspath(os.path.dirname(__file__))
+# Import the *local* wexpect:
+sys.path.insert(0, here)
+import wexpect
+
 # Package meta-data.
 NAME = 'wexpect'
 DESCRIPTION = 'Windows alternative of pexpect'
@@ -11,7 +16,7 @@ URL = 'https://github.com/raczben/wexpect'
 EMAIL = 'betontalpfa@gmail.com'
 AUTHOR = 'Noah Spurrier, Richard Holden, Marco Molteni, Kimberley Burchett, Robert Stone, Hartmut Goebel, Chad Schroeder, Erick Tryzelaar, Dave Kirby, Ids vander Molen, George Todd, Noel Taylor, Nicolas D. Cesar, Alexander Gattin, Geoffrey Marshall, Francisco Lourenco, Glen Mabey, Karthik Gurusamy, Fernando Perez, Corey Minyard, Jon Cohen, Guillaume Chazarain, Andrew Ryan, Nick Craig-Wood, Andrew Stone, Jorgen Grahn, Benedek Racz'
 REQUIRES_PYTHON = '>=2.7.0'
-VERSION = '0.0.2'
+VERSION = wexpect.__version__
 
 # What packages are required for this module to be executed?
 REQUIRED = [
@@ -23,12 +28,6 @@ EXTRAS = {
     # 'fancy feature': ['django'],
 }
 
-# The rest you shouldn't have to touch too much :)
-# ------------------------------------------------
-# Except, perhaps the License and Trove Classifiers!
-# If you do change the License, remember to change the Trove Classifier for that!
-
-here = os.path.abspath(os.path.dirname(__file__))
 
 # Import the README and use it as the long-description.
 # Note: this will only work if 'README.md' is present in your MANIFEST.in file!
