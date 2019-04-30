@@ -88,10 +88,10 @@ try:
             import pywintypes
             from win32com.shell.shellcon import CSIDL_APPDATA
             from win32com.shell.shell import SHGetSpecialFolderPath
-            from win32console import *
-            from win32process import *
-            from win32con import *
-            from win32gui import *
+            import win32console
+            import win32process
+            import win32con
+            import win32gui
             import win32api
             import win32file
             import winerror
@@ -1910,7 +1910,7 @@ class spawn_windows (spawn_unix, object):
         if self.wtty.isalive():
             return True
         else:
-            self.exitstatus = GetExitCodeProcess(self.wtty.getchild())
+            self.exitstatus = win32process.GetExitCodeProcess(self.wtty.getchild())
             self.status = (self.pid, self.exitstatus << 8)  # left-shift exit status by 8 bits like os.waitpid
             self.terminated = True
             return False
@@ -1947,7 +1947,7 @@ class Wtty:
     def __init__(self, timeout=30, codepage=None):
         self.__buffer = StringIO()
         self.__bufferY = 0
-        self.__currentReadCo = PyCOORDType(0, 0)
+        self.__currentReadCo = win32console.PyCOORDType(0, 0)
         self.__consSize = [80, 16000]
         self.__parentPid = 0
         self.__oproc = 0
@@ -1972,14 +1972,14 @@ class Wtty:
         self.startChild(args, env)
             
         while True:
-            msg = GetMessage(0, 0, 0)
+            msg = win32gui.GetMessage(0, 0, 0)
             childPid = msg[1][2]
-            # Sometimes GetMessage returns a bogus PID, so keep calling it
+            # Sometimes win32gui.GetMessage returns a bogus PID, so keep calling it
             # until we can successfully connect to the child or timeout is
             # reached
             if childPid:
                 try:
-                    self.__childProcess = win32api.OpenProcess(PROCESS_TERMINATE | PROCESS_QUERY_INFORMATION, False, childPid)
+                    self.__childProcess = win32api.OpenProcess(win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, childPid)
                 except pywintypes.error, e:
                     if time.time() > ts + self.timeout:
                         break
@@ -1993,12 +1993,12 @@ class Wtty:
         
                                                                                                               
         
-        winHandle = int(GetConsoleWindow())
+        winHandle = int(win32console.GetConsoleWindow())
         
         self.__switch = True
         
         if winHandle != 0:
-            self.__parentPid = GetWindowThreadProcessId(winHandle)[1]    
+            self.__parentPid = win32process.GetWindowThreadProcessId(winHandle)[1]    
             # Do we have a console attached? Do not rely on winHandle, because
             # it will also be non-zero if we didn't have a console, and then 
             # spawned a child process! Using sys.stdout.isatty() seems safe
@@ -2006,15 +2006,15 @@ class Wtty:
             # If the original process had a console, record a list of attached
             # processes so we can check if we need to reattach/reallocate the 
             # console later
-            self.processList = GetConsoleProcessList()
+            self.processList = win32console.GetConsoleProcessList()
         else:
             self.switchTo(False)
             self.__switch = False
    
     def startChild(self, args, env):
-        si = GetStartupInfo()
-        si.dwFlags = STARTF_USESHOWWINDOW
-        si.wShowWindow = SW_HIDE
+        si = win32process.GetStartupInfo()
+        si.dwFlags = win32process.STARTF_USESHOWWINDOW
+        si.wShowWindow = win32con.SW_HIDE
         # Determine the directory of wexpect.py or, if we are running 'frozen'
         # (eg. py2exe deployment), of the packed executable
         dirname = os.path.dirname(sys.executable 
@@ -2041,7 +2041,7 @@ class Wtty:
                 spath.append(os.path.join(dirname, 'library.zip', 
                                           os.path.basename(os.path.splitext(sys.executable)[0])))
             pyargs.insert(0, '-S')  # skip 'import site'
-        pid = GetCurrentProcessId()
+        pid = win32process.GetCurrentProcessId()
         tid = win32api.GetCurrentThreadId()
         cp = self.codepage or windll.kernel32.GetACP()
         # If we are running 'frozen', expect python.exe in the same directory
@@ -2057,8 +2057,8 @@ class Wtty:
                                         "wexpect.ConsoleReader(wexpect.join_args(args), %i, %i, cp=%i, logdir=%r)" % (spath, args, pid, tid, cp, logdir))
                      
         
-        self.__oproc, _, self.conpid, self.__otid = CreateProcess(None, commandLine, None, None, False, 
-                                                                  CREATE_NEW_CONSOLE, env, None, si)
+        self.__oproc, _, self.conpid, self.__otid = win32process.CreateProcess(None, commandLine, None, None, False, 
+                                                                  win32process.CREATE_NEW_CONSOLE, env, None, si)
             
    
     def switchTo(self, attatched=True):
@@ -2069,16 +2069,16 @@ class Wtty:
             return
         
         if attatched:
-            FreeConsole()
+            win32console.FreeConsole()
         
         try:
-            AttachConsole(self.conpid)
-            self.__consin = GetStdHandle(STD_INPUT_HANDLE)
+            win32console.AttachConsole(self.conpid)
+            self.__consin = win32console.GetStdHandle(win32console.STD_INPUT_HANDLE)
             self.__consout = self.getConsoleOut()
         except Exception, e:
             #e = traceback.format_exc()
             try:
-                AttachConsole(self.__parentPid)
+                win32console.AttachConsole(self.__parentPid)
             except Exception, ex:
                 pass
                 #log(e)
@@ -2102,27 +2102,27 @@ class Wtty:
             # If we originally had a console, re-attach it (or allocate a new one)
             # If we didn't have a console to begin with, there's no need to
             # re-attach/allocate
-            FreeConsole()
+            win32console.FreeConsole()
             if len(self.processList) > 1:
                 # Our original console is still present, re-attach
-                AttachConsole(self.__parentPid)
+                win32console.AttachConsole(self.__parentPid)
             else:
                 # Our original console has been free'd, allocate a new one
-                AllocConsole()
+                win32console.AllocConsole()
         
         self.__consin = None
         self.__consout = None
     
     def getConsoleOut(self):
         consout = win32file.CreateFile('CONOUT$', 
-                                       GENERIC_READ | GENERIC_WRITE, 
-                                       FILE_SHARE_READ | FILE_SHARE_WRITE, 
+                                       win32con.GENERIC_READ | win32con.GENERIC_WRITE, 
+                                       win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE, 
                                        None, 
-                                       OPEN_EXISTING, 
+                                       win32con.OPEN_EXISTING, 
                                        0, 
                                        0)
                                        
-        return PyConsoleScreenBufferType(consout)    
+        return win32console.PyConsoleScreenBufferType(consout)    
     
     def getchild(self):
         """Returns a handle to the child process."""
@@ -2132,13 +2132,13 @@ class Wtty:
     def terminate_child(self):
         """Terminate the child process."""
         
-        win32api.TerminateProcess(self.__childProcess, 1)
+        win32api.win32process.TerminateProcess(self.__childProcess, 1)
         
     def createKeyEvent(self, char):
         """Creates a single key record corrosponding to
             the ascii character char."""
         
-        evt = PyINPUT_RECORDType(KEY_EVENT)
+        evt = win32console.PyINPUT_RECORDType(win32console.KEY_EVENT)
         evt.KeyDown = True
         evt.Char = char
         evt.RepeatCount = 1
@@ -2372,7 +2372,7 @@ class Wtty:
         """Clears the console after pausing the child and
         reading all the data currently on the console."""
     
-        orig = PyCOORDType(0, 0)
+        orig = win32console.PyCOORDType(0, 0)
         self.__consout.SetConsoleCursorPosition(orig)
         self.__currentReadCo.X = 0
         self.__currentReadCo.Y = 0
@@ -2435,7 +2435,7 @@ class Wtty:
         
         self.switchTo()
         try:
-            self.__consout.SetConsoleScreenBufferSize(PyCOORDType(c, r))
+            self.__consout.SetConsoleScreenBufferSize(win32console.PyCOORDType(c, r))
         except:
             self.switchBack()
             raise
@@ -2446,7 +2446,7 @@ class Wtty:
     
         self.switchTo()
         try:
-            ShowWindow(GetConsoleWindow(), SW_SHOW)
+            win32gui.ShowWindow(win32console.GetConsoleWindow(), win32con.SW_SHOW)
         except:
             self.switchBack()
             raise
@@ -2457,7 +2457,7 @@ class Wtty:
         
         self.switchTo()
         try:
-            ShowWindow(GetConsoleWindow(), SW_HIDE)
+            win32gui.ShowWindow(win32console.GetConsoleWindow(), win32con.SW_HIDE)
         except:
             self.switchBack()
             raise
@@ -2466,7 +2466,7 @@ class Wtty:
     def isalive(self):
         """True if the child is still alive, false otherwise"""
         
-        return GetExitCodeProcess(self.__childProcess) == STILL_ACTIVE
+        return win32process.GetExitCodeProcess(self.__childProcess) == win32con.STILL_ACTIVE
     
     ###Broken###
     def sendintr(self):
@@ -2479,7 +2479,7 @@ class Wtty:
             time.sleep(.15)
             win32api.SetConsoleCtrlHandler(None, True)
             time.sleep(.15)
-            win32api.GenerateConsoleCtrlEvent(0, 0)
+            win32api.win32console.GenerateConsoleCtrlEvent(0, 0)
             time.sleep(.25)
         except:
             self.switchBack()
@@ -2497,7 +2497,7 @@ class ConsoleReader:
         if cp:
             log("Setting console output code page to %s" % cp, 'consolereader', logdir)
             try:
-                SetConsoleOutputCP(cp)
+                win32console.SetConsoleOutputCP(cp)
             except Exception, e:
                 log(e, 'consolereader', logdir)
             else:
@@ -2508,30 +2508,30 @@ class ConsoleReader:
                 consout = self.getConsoleOut()
                 self.initConsole(consout)
                 
-                si = GetStartupInfo()
-                self.__childProcess, _, childPid, self.__tid = CreateProcess(None, path, None, None, False, 
+                si = win32process.GetStartupInfo()
+                self.__childProcess, _, childPid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
                                                                              0, None, None, si)
             except Exception, e:
                 log(e, 'consolereader', logdir)
                 time.sleep(.1)
-                win32api.PostThreadMessage(int(tid), WM_USER, 0, 0)
+                win32api.PostThreadMessage(int(tid), win32con.WM_USER, 0, 0)
                 sys.exit()
             
             time.sleep(.1)
             
-            win32api.PostThreadMessage(int(tid), WM_USER, childPid, 0)
+            win32api.PostThreadMessage(int(tid), win32con.WM_USER, childPid, 0)
             
-            parent = win32api.OpenProcess(PROCESS_TERMINATE | PROCESS_QUERY_INFORMATION , 0, int(pid))
+            parent = win32api.OpenProcess(win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION , 0, int(pid))
             paused = False
    
             while True:
                 consinfo = consout.GetConsoleScreenBufferInfo()
                 cursorPos = consinfo['CursorPosition']
                 
-                if GetExitCodeProcess(parent) != STILL_ACTIVE or GetExitCodeProcess(self.__childProcess) != STILL_ACTIVE:
+                if win32process.GetExitCodeProcess(parent) != win32con.STILL_ACTIVE or win32process.GetExitCodeProcess(self.__childProcess) != win32con.STILL_ACTIVE:
                     time.sleep(.1)
                     try:
-                        TerminateProcess(self.__childProcess, 0)
+                        win32process.TerminateProcess(self.__childProcess, 0)
                     except pywintypes.error, e:
                         # 'Access denied' happens always? Perhaps if not 
                         # running as admin (or UAC enabled under Vista/7). 
@@ -2566,21 +2566,21 @@ class ConsoleReader:
 
     def getConsoleOut(self):
         consout = win32file.CreateFile('CONOUT$', 
-                                       GENERIC_READ | GENERIC_WRITE, 
-                                       FILE_SHARE_READ | FILE_SHARE_WRITE, 
+                                       win32con.GENERIC_READ | win32con.GENERIC_WRITE, 
+                                       win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE, 
                                        None, 
-                                       OPEN_EXISTING, 
+                                       win32con.OPEN_EXISTING, 
                                        0, 
                                        0)
                                        
-        return PyConsoleScreenBufferType(consout)
+        return win32console.PyConsoleScreenBufferType(consout)
         
     def initConsole(self, consout):     
-        rect = PySMALL_RECTType(0, 0, 79, 24)
+        rect = win32console.PySMALL_RECTType(0, 0, 79, 24)
         consout.SetConsoleWindowInfo(True, rect)
-        size = PyCOORDType(80, 16000)
+        size = win32console.PyCOORDType(80, 16000)
         consout.SetConsoleScreenBufferSize(size)
-        pos = PyCOORDType(0, 0)
+        pos = win32console.PyCOORDType(0, 0)
         # Use NUL as fill char because it displays as whitespace
         # (if we interact() with the child)
         consout.FillConsoleOutputCharacter(screenbufferfillchar, size.X * size.Y, pos)   
@@ -2588,14 +2588,14 @@ class ConsoleReader:
     def suspendThread(self):
         """Pauses the main thread of the child process."""
         
-        handle = windll.kernel32.OpenThread(THREAD_SUSPEND_RESUME, 0, self.__tid)
-        SuspendThread(handle)
+        handle = windll.kernel32.OpenThread(win32con.THREAD_SUSPEND_RESUME, 0, self.__tid)
+        win32process.SuspendThread(handle)
         
     def resumeThread(self):
         """Un-pauses the main thread of the child process."""
     
-        handle = windll.kernel32.OpenThread(THREAD_SUSPEND_RESUME, 0, self.__tid)
-        ResumeThread(handle)
+        handle = windll.kernel32.OpenThread(win32con.THREAD_SUSPEND_RESUME, 0, self.__tid)
+        win32process.ResumeThread(handle)
    
 class searcher_string (object):
 
@@ -2941,3 +2941,4 @@ def split_command_line(command_line):
     if arg != '':
         arg_list.append(arg)
     return arg_list
+
