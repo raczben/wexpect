@@ -74,6 +74,7 @@ try:
     import traceback
     import signal
     import subprocess
+    import pkg_resources
     
     if sys.platform != 'win32':
         import pty
@@ -105,7 +106,10 @@ except ImportError, e:
 A critical module was not found. Probably this operating system does not
 support it. Pexpect is intended for UNIX-like operating systems.""")
 
-__version__ = '2.3.1'
+try:
+    __version__ = pkg_resources.require("wexpect")[0].version
+except:
+    __version__ = '0.0.1.unkown0'
 __revision__ = '$Revision: 399 $'
 __all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'which',
     'split_command_line', '__version__', '__revision__']
