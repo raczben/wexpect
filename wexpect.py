@@ -1413,10 +1413,11 @@ class spawn_unix (object):
                 if timeout < 0 and timeout is not None:
                     raise TIMEOUT ('Timeout exceeded in expect_any().')
                 # Still have time left, so read more data
-                c = self.read_nonblocking (self.maxread, timeout)
+                c = self.read_nonblocking(self.maxread, timeout)
+                # c = c.decode("utf-8") 
                 freshlen = len(c)
                 time.sleep (0.0001)
-                incoming = incoming + c
+                incoming += c
                 if timeout is not None:
                     timeout = end_time - time.time()
         except EOF as e:
@@ -1784,19 +1785,9 @@ class spawn_windows (spawn_unix, object):
         It will not wait for 30 seconds for another 99 characters to come in.
 
         This is a wrapper around Wtty.read(). """
-                                  
 
         if self.closed:
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
-        
-                                   
-                                
-                               
-                                                                          
-                                                    
-                               
-                 
-                                                                         
         
         if timeout == -1:
             timeout = self.timeout
@@ -2228,11 +2219,8 @@ class Wtty:
                 strlist.append(c)
 
         s = ''.join(strlist)
-        try:
-            return s.encode(str(self.codepage), 'replace')
-        except LookupError:
-            return s.encode(getattr(sys.stdout, 'encoding', None) or 
-                            sys.getdefaultencoding(), 'replace')
+        return s
+    
     
     def readConsoleToCursor(self):
         """Reads from the current read position to the current cursor
@@ -2317,6 +2305,7 @@ class Wtty:
 
         return s
     
+    
     def read_nonblocking(self, timeout, size):
         """Reads data from the console if available, otherwise
            waits timeout seconds, and writes the string 'None'
@@ -2347,8 +2336,6 @@ class Wtty:
                 time.sleep(0.001)
                 end = time.clock()
                 timeout -= end - start
-        
-                                             
                                    
         except Exception as e:
             log(e)
@@ -2358,6 +2345,7 @@ class Wtty:
             
         self.switchBack()    
         return s
+    
     
     def refreshConsole(self):
         """Clears the console after pausing the child and
@@ -2874,7 +2862,7 @@ def join_args(args):
     commandline = []
     for arg in args:
         if re.search('[\^!$%&()[\]{}=;\'+,`~\s]', arg):
-			arg = '"%s"' % arg
+            arg = '"%s"' % arg
         commandline.append(arg)
     return ' '.join(commandline)
 
