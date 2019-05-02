@@ -5,4 +5,7 @@ from setuptools import setup
 setup(
     setup_requires=['pbr'],
     pbr=True,
+    
+    packages=[''],
+    py_modules=['wexpect'],
 )
