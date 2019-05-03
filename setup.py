@@ -6,6 +6,6 @@ setup(
     setup_requires=['pbr'],
     pbr=True,
     
-    packages=[''],
+    # packages=[''],
     py_modules=['wexpect'],
 )
