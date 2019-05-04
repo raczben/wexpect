@@ -66,14 +66,13 @@ $Id: pexpect.py 507 2007-12-27 02:40:52Z noah $
 try:
     import os, sys, time
     import select
-    import string
+    import shutil
     import re
     import struct
     import types
     import errno
     import traceback
     import signal
-    import subprocess
     import pkg_resources
     
     if sys.platform != 'win32':
@@ -545,7 +544,7 @@ class spawn_unix (object):
             self.args.insert (0, command)
             self.command = command
 
-        command_with_path = which(self.command)
+        command_with_path = shutil.which(self.command)
         if command_with_path is None:
             raise ExceptionPexpect ('The command was not found or was not executable: %s.' % self.command)
         self.command = command_with_path
@@ -1710,7 +1709,7 @@ class spawn_windows (spawn_unix, object):
             self.args.insert (0, command)
             self.command = command    
             
-        command_with_path = which(self.command)
+        command_with_path = shutil.which(self.command)
         if command_with_path is None:
            raise ExceptionPexpect ('The command was not found or was not executable: %s.' % self.command)
         self.command = command_with_path
@@ -2140,6 +2139,8 @@ class Wtty:
                 return ""
             consinfo = self.__consout.GetConsoleScreenBufferInfo()
             startCo = consinfo['CursorPosition']
+            print(records)
+            print(consinfo)
             wrote = self.__consin.WriteConsoleInput(records)
             ts = time.time()
             while self.__consin and self.__consin.PeekConsoleInput(8) != ():
@@ -2827,34 +2828,12 @@ def log(e, suffix='', logdir=None):
 def excepthook(etype, value, tb):
 	log(''.join(traceback.format_exception(etype, value, tb)))
 
-#sys.excepthook = excepthook
-        
+
 def which (filename):
+    from warnings import warn
+    warn("Which is deprecated. You should use shutil.which instead")
+    return shutil.which(filename)
 
-    """This takes a given filename; tries to find it in the environment path;
-    then checks if it is executable. This returns the full path to the filename
-    if found and executable. Otherwise this returns None."""
-
-    # Special case where filename already contains a path.
-    if os.path.dirname(filename) != '':
-        if os.access (filename, os.X_OK):
-            return filename
-
-    if 'PATH' not in os.environ or os.environ['PATH'] == '':
-        p = os.defpath
-    else:
-        p = os.environ['PATH']
-
-    # Oddly enough this was the one line that made Pexpect
-    # incompatible with Python 1.5.2.
-    #pathlist = p.split (os.pathsep)
-    pathlist = string.split (p, os.pathsep)
-
-    for path in pathlist:
-        f = os.path.join(path, filename)
-        if os.access(f, os.X_OK):
-            return f
-    return None
 
 def join_args(args):
     """Joins arguments into a command line. It quotes all arguments that contain
