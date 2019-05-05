@@ -1702,7 +1702,6 @@ class spawn_windows (spawn_unix, object):
         if args == []:
             self.args = split_command_line(command)
             self.command = self.args[0]
-            print('command@@ {}    args {}'.format(command, args))
         else:
             self.args = args[:] # work with a copy
             self.args.insert (0, command)

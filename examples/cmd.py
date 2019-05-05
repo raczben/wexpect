@@ -12,7 +12,7 @@ sys.path.insert(0, wexpectPath)
 import wexpect
 
 # Path of cmd executable:
-cmdPathes = ['C:\Windows\System32\cmd.exe', 'cmd.exe', 'cmd']
+cmdPathes = [r'C:\\Windows\\System32\\cmd.exe', 'cmd.exe', 'cmd']
 cmdPrompt = '>'
 
 for cmdPath in cmdPathes:
