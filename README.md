@@ -5,20 +5,26 @@
 *Pexpect* is a Python module for spawning child applications and controlling
 them automatically.
 
+**!! UPDATE !!**
+
+I'm glad to announce that python-3 is supported form version 2.3.3
+
 ## **Install**
 
     pip install wexpect
-    
-Note that only python 2.x is supported.
     
 ## **Usage**
 
 To interract with a child process use `spawn` method:
 
-    child = pexpect.spawn('C:\Windows\System32\cmd.exe')
-    child.expect('>')
-    child.sendline('ls')
-    child.expect('>')
+```python
+import wexpect 
+child = wexpect.spawn('cmd.exe')
+child.expect('>')
+child.sendline('ls')
+child.expect('>')
+print(child.before)
+```
 
 For more information see [examples](./examples) folder.
 
@@ -50,9 +56,7 @@ This repo tries to fix these limitations, with a few example code and pypi integ
 
 
 ---
-## Installation and limitation of wexpect
-
-Current version does *not* work on python-3.x. You need to use **python 2.x** to use wexpect.
+## Installation of wexpect
 
 ### Standard installation
 
@@ -69,3 +73,13 @@ One (non stanbdard) package, **pypiwin32** is needed by wexpect.
 
     pip install pypiwin32
     
+    
+---
+## Dev
+
+Thanks for any contributing!
+
+To run test, enter into the folder of the wexpect's repo then:
+
+`python -m pytest tests`
+
