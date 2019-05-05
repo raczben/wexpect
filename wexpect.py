@@ -1700,10 +1700,9 @@ class spawn_windows (spawn_unix, object):
             raise TypeError ('The argument, args, must be a list.')
    
         if args == []:
-            #Momentairly broken - path '\' characters being misinterpreted
-            #self.args = split_command_line(command)
-            self.args = [command]
+            self.args = split_command_line(command)
             self.command = self.args[0]
+            print('command@@ {}    args {}'.format(command, args))
         else:
             self.args = args[:] # work with a copy
             self.args.insert (0, command)
