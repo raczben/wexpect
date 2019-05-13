@@ -284,7 +284,6 @@ def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, log
             log('\t%s=%s' % (name, env[name]))
     if cwd:
         log('Working directory: %s' % cwd)
-    log('Spawning %s' % join_args([command] + args))
     if sys.platform == 'win32':
         return spawn_windows(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env,
                              codepage)
@@ -1413,7 +1412,6 @@ class spawn_unix (object):
                     raise TIMEOUT ('Timeout exceeded in expect_any().')
                 # Still have time left, so read more data
                 c = self.read_nonblocking(self.maxread, timeout)
-                # c = c.decode("utf-8") 
                 freshlen = len(c)
                 time.sleep (0.0001)
                 incoming += c
@@ -2843,7 +2841,7 @@ def join_args(args):
         commandline.append(arg)
     return ' '.join(commandline)
 
-def split_command_line(command_line):
+def split_command_line(command_line, escape_char = '^'):
 
     """This splits a command line into a list of arguments. It splits arguments
     on spaces, but handles embedded quotes, doublequotes, and escaped
@@ -2863,7 +2861,7 @@ def split_command_line(command_line):
 
     for c in command_line:
         if state == state_basic or state == state_whitespace:
-            if c == '\\': # Escape the next character
+            if c == escape_char: # Escape the next character
                 state = state_esc
             elif c == r"'": # Handle single quote
                 state = state_singlequote
