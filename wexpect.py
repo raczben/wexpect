@@ -2114,7 +2114,7 @@ class Wtty:
     def terminate_child(self):
         """Terminate the child process."""
         
-        win32api.win32process.TerminateProcess(self.__childProcess, 1)
+        win32api.TerminateProcess(self.__childProcess, 1)
         
     def createKeyEvent(self, char):
         """Creates a single key record corrosponding to
