@@ -29,10 +29,10 @@ class SplitCommandLineTestCase(PexpectTestCase.PexpectTestCase):
         assert len(wexpect.split_command_line(r'one two')) == 2
         assert len(wexpect.split_command_line(r'one  two')) == 2
         assert len(wexpect.split_command_line(r'one   two')) == 2
-        assert len(wexpect.split_command_line(r'one\ one')) == 1
+        assert len(wexpect.split_command_line(r'one^ one')) == 1
         assert len(wexpect.split_command_line('\'one one\'')) == 1
         assert len(wexpect.split_command_line(r'one\"one')) == 1
-        assert len(wexpect.split_command_line(r'This\' is a\'\ test')) == 3
+        assert len(wexpect.split_command_line(r"This^' is a^'^ test")) == 3
 
 if __name__ == '__main__':
     unittest.main()

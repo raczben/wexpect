@@ -1855,6 +1855,9 @@ class spawn_windows (spawn_unix, object):
     def kill(self, sig):
         """Sig == sigint for ctrl-c otherwise the child is terminated."""
         
+        if not self.isalive():
+            return
+            
         if sig == signal.SIGINT:
             self.wtty.sendintr()
         else:
@@ -2108,8 +2111,8 @@ class Wtty:
      
     def terminate_child(self):
         """Terminate the child process."""
-        
-        win32api.win32process.TerminateProcess(self.__childProcess, 1)
+        win32api.TerminateProcess(self.__childProcess, 1)
+        # win32api.win32process.TerminateProcess(self.__childProcess, 1)
         
     def createKeyEvent(self, char):
         """Creates a single key record corrosponding to
@@ -2842,7 +2845,6 @@ def join_args(args):
     return ' '.join(commandline)
 
 def split_command_line(command_line, escape_char = '^'):
-
     """This splits a command line into a list of arguments. It splits arguments
     on spaces, but handles embedded quotes, doublequotes, and escaped
     characters. It's impossible to do this with a regular expression, so I

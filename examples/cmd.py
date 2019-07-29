@@ -7,7 +7,7 @@ import os
 
 here = os.path.dirname(os.path.abspath(__file__))
 wexpectPath = os.path.dirname(here)
-sys.path.insert(0, wexpectPath)
+#sys.path.insert(0, wexpectPath)
 
 import wexpect
 
