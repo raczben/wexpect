@@ -1,6 +1,8 @@
+language: python
 dist: xenial   # required for Python >= 3.7
 matrix:
   include:
+    - stage: test
     - os: windows
       language: sh
       python: "3.7"
@@ -18,7 +20,7 @@ install:
   
 # command to run tests
 script:
-  - coverage run -m unittest
+  - tox
   
 # Push the results back to codecov
 after_success:

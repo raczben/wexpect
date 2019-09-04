@@ -2319,7 +2319,7 @@ class Wtty:
                 if self.__currentReadCo.Y > maxconsoleY:
                     time.sleep(.2)
             
-                start = time.clock()
+                start = time.time()
                 s = self.readConsoleToCursor()
                 
                 if self.__currentReadCo.Y > maxconsoleY:
@@ -2334,7 +2334,7 @@ class Wtty:
                     return ''
                 
                 time.sleep(0.001)
-                end = time.clock()
+                end = time.time()
                 timeout -= end - start
                                    
         except Exception as e:
