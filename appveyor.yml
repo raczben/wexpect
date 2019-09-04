@@ -6,4 +6,4 @@ install:
 - pip install .[test]
 
 test_script:
-- coverage run -m unittest
+- python -m unittest
