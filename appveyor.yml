@@ -1,0 +1,9 @@
+# appveyor.yml
+---
+build: off
+
+install:
+- pip install .[test]
+
+test_script:
+- coverage run -m unittest

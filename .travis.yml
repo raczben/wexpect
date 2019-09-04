@@ -1,11 +1,14 @@
 dist: xenial   # required for Python >= 3.7
-language: python
-python:
-  - "3.5"
-  - "3.6"
-  - "3.7"
-
-os: windows
+matrix:
+  include:
+    - os: windows
+      language: sh
+      python: "3.7"
+      before_install:
+        - choco install python3
+        - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
+        - virtualenv $HOME/venv
+        - source $HOME/venv/Scripts/activate
   
 # command to install dependencies
 install:
