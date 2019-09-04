@@ -1,0 +1,26 @@
+dist: xenial   # required for Python >= 3.7
+language: python
+python:
+  - "3.5"
+  - "3.6"
+  - "3.7"
+
+os: windows
+  
+# command to install dependencies
+install:
+  - pip install .[test]
+  
+# command to run tests
+script:
+  - coverage run -m unittest
+  
+# Push the results back to codecov
+after_success:
+- codecov
+
+notifications:
+  email:
+    on_success: never
+    on_failure: always
+    
