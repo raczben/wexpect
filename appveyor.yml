@@ -6,4 +6,4 @@ install:
 - pip install .[test]
 
 test_script:
-- python -m unittest
+- tox
