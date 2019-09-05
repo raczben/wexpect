@@ -29,10 +29,10 @@ class TestCaseConstructor(PexpectTestCase.PexpectTestCase):
         This assumes that the root directory / is static during the test.
         '''
         p1 = wexpect.spawn('uname -m -n -p -r -s -v')
-        p2 = wexpect.spawn('uname', ['-m', '-n', '-p', '-r', '-s', '-v'])
         p1.expect(wexpect.EOF)
+        p2 = wexpect.spawn('uname', ['-m', '-n', '-p', '-r', '-s', '-v'])
         p2.expect(wexpect.EOF)
-        assert p1.before == p2.before
+        self.assertEqual(p1.before, p2.before)
 
     def test_named_parameters (self):
         '''This tests that named parameters work.

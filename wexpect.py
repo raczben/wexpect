@@ -405,9 +405,10 @@ class spawn_unix (object):
         stores the status returned by os.waitpid. You can interpret this using
         os.WIFEXITED/os.WEXITSTATUS or os.WIFSIGNALED/os.TERMSIG. """
 
-        self.STDIN_FILENO = pty.STDIN_FILENO
-        self.STDOUT_FILENO = pty.STDOUT_FILENO
-        self.STDERR_FILENO = pty.STDERR_FILENO
+        if sys.platform != 'win32':
+            self.STDIN_FILENO = pty.STDIN_FILENO
+            self.STDOUT_FILENO = pty.STDOUT_FILENO
+            self.STDERR_FILENO = pty.STDERR_FILENO
         self.stdin = sys.stdin
         self.stdout = sys.stdout
         self.stderr = sys.stderr
@@ -1616,55 +1617,21 @@ class spawn_unix (object):
 # End of spawn_unix class
 ##############################################################################
 
-class spawn_windows (spawn_unix, object):
+class spawn_windows (spawn_unix):
     """This is the main class interface for Pexpect. Use this class to start
     and control child applications. """
 
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None, logfile=None, cwd=None, env=None,
                  codepage=None):
-        self.stdin = sys.stdin
-        self.stdout = sys.stdout
-        self.stderr = sys.stderr
-        self.searcher = None
-        self.ignorecase = False
-        self.before = None
-        self.after = None
-        self.match = None
-        self.match_index = None
-        self.terminated = True
-        self.exitstatus = None
-        self.signalstatus = None
-        self.status = None # status returned by os.waitpid
-        self.flag_eof = False
-        self.pid = None
-        self.child_fd = -1 # initially closed
-        self.timeout = timeout
-        self.delimiter = EOF
-        self.logfile = logfile
-        self.logfile_read = None # input from child (read_nonblocking)
-        self.logfile_send = None # output to send (send, sendline)
-        self.maxread = maxread # max bytes to read at one time into buffer
-        self.buffer = '' # This is the read buffer. See maxread.
-        self.searchwindowsize = searchwindowsize # Anything before searchwindowsize point is preserved, but not searched.
-        self.delaybeforesend = 0.05 # Sets sleep time used just before sending data to child. Time in seconds.
-        self.delayafterclose = 0.1 # Sets delay in close() method to allow kernel time to update process status. Time in seconds.
-        self.delayafterterminate = 0.1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
-        self.softspace = False # File-like object.
-        self.name = '<' + repr(self) + '>' # File-like object.
-        self.encoding = None # File-like object.
-        self.closed = True # File-like object.
-        self.ocwd = os.getcwd()
-        self.cwd = cwd
-        self.env = env
+        
         self.codepage = codepage
+        
+        # Super class init function
+        super(spawn_windows, self).__init__(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env)
+        
+        #__irix_hack set by super, windows doesn't need it.
+        self.__irix_hack = None
 
-        # allow dummy instances for subclasses that may not use command or args.
-        if command is None:
-            self.command = None
-            self.args = None
-            self.name = '<pexpect factory incomplete>'
-        else:
-            self._spawn (command, args)
 
     def __del__(self):
         """This makes sure that no system resources are left open. Python only
@@ -1730,6 +1697,7 @@ class spawn_windows (spawn_unix, object):
         self.terminated = False
         self.closed = False
         self.pid = self.wtty.pid
+        
 
     def fileno (self):   # File-like object.
         """There is no child fd."""
@@ -1941,6 +1909,7 @@ class Wtty:
         self.lastReadData = ""
         self.pid = None
         self.processList = []
+        self.__consout = None
         # We need a timeout for connecting to the child process
         self.timeout = timeout
         self.totalRead = 0
@@ -2210,10 +2179,6 @@ class Wtty:
         for i, c in enumerate(s):
             if c == screenbufferfillchar:
                 if (self.totalRead - self.lastRead + i + 1) % 80 == 0:
-                                
-                                    
-                             
-                                            
                     strlist.append('\r\n')
             else:
                 strlist.append(c)
