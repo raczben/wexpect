@@ -77,9 +77,6 @@ To run test, enter into the folder of the wexpect's repo then:
 
 `python -m unittest`
 
-Note that `tests.test_constructor.TestCaseConstructor.test_constructor` test fails due to
-[STDERR isn't handled properly #2](https://github.com/raczben/wexpect/issues/2).
-
 ### Release
 
 The wexpect uses [pbr](https://docs.openstack.org/pbr/latest/) for managing releasing procedures.

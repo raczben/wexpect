@@ -9,4 +9,4 @@ test_script:
 - tox
 
 after_test:
-- codecov
+- bash <(curl -s https://codecov.io/bash)

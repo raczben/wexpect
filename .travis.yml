@@ -13,18 +13,15 @@ matrix:
         - ls -la /c/Python37/Scripts
         - virtualenv $HOME/venv
         - source $HOME/venv/Scripts/activate
-  
-# command to install dependencies
-install:
-  - pip install .[test]
-  
-# command to run tests
-script:
-  - tox
-  
-# Push the results back to codecov
-after_success:
-- codecov
+      # command to install dependencies
+      install:
+        - pip install .[test]
+      # command to run tests
+      script:
+        - tox
+      # Push the results back to codecov
+      after_success:
+      - codecov
 
 notifications:
   email:
