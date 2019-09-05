@@ -35,6 +35,7 @@ child.expect('>')
 child.sendline('ls')
 child.expect('>')
 print(child.before)
+child.sendline('exit')
 ```
 
 For more information see [examples](./examples) folder.

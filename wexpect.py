@@ -2430,7 +2430,7 @@ class Wtty:
             raise
         self.switchBack()
     
-class ConsoleReader:
+class ConsoleReader: # pragma: no cover
    
     def __init__(self, path, pid, tid, env = None, cp=None, logdir=None):
         self.logdir = logdir
