@@ -7,3 +7,6 @@ install:
 
 test_script:
 - tox
+
+after_test:
+- codecov

@@ -1,18 +1,29 @@
 # **wexpect**
 
+[![Build status](https://ci.appveyor.com/api/projects/status/tbji72d5s0tagrt9?svg=true)](https://ci.appveyor.com/project/raczben/wexpect)
+
 *Wexpect* is a Windows variant of [pexpect](https://pexpect.readthedocs.io/en/stable/).
 
 *Pexpect* is a Python module for spawning child applications and controlling
 them automatically.
 
-**!! UPDATE !!**
+## You need wexpect if...
 
-I'm glad to announce that python-3 is supported form version 2.3.3
+ - you want to control any windows application from python script.
+ - you want to write test-automation script for a windows application.
+ - you want to post-process some application's standard output.
 
 ## **Install**
 
     pip install wexpect
-    
+
+OR
+
+Because wexpect a tiny project dropping the wexpect.py file into your working directory is usually
+good enough instead of installing. However in this case you need to install manually the pypiwin32
+dependence.
+
+
 ## **Usage**
 
 To interract with a child process use `spawn` method:
@@ -56,25 +67,6 @@ This repo tries to fix these limitations, with a few example code and pypi integ
 
 
 ---
-## Installation of wexpect
-
-### Standard installation
-
-This version is uploaded to pypi server so you can easily install with pip:
-
-    pip install wexpect
-    
-### Manual installation
-
-Because this is a tiny project dropping the wexpect.py file into your working directory is usually
-good enough instead of installing. However in this case you need to install manually the one dependence.
-
-One (non stanbdard) package, **pypiwin32** is needed by wexpect.
-
-    pip install pypiwin32
-    
-    
----
 ## Dev
 
 Thanks for any contributing!
@@ -112,10 +104,6 @@ The wexpect uses [pbr](https://docs.openstack.org/pbr/latest/) for managing rele
  - Install the test build `python -m pip install wexpect`
  - run `python -c "import wexpect;print(wexpect.__version__)"` 
  
-Test 
- This means that you should r
- 
-
 
 
 
