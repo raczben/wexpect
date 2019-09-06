@@ -1,6 +1,8 @@
-# A simple example code for wexpect written in python-2.7
+'''
+This example script runs foo python program, and communicates with it. For better understanding
+please run natively foo.py first, which is a very basic stdio handler script.
+'''
 
-from __future__ import print_function
 import sys
 import wexpect
 import os
@@ -35,4 +37,3 @@ p.wait()
 
 # print the texts
 print(p.read(), end='')
-

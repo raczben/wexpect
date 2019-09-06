@@ -1,6 +1,7 @@
 # **wexpect**
 
 [![Build status](https://ci.appveyor.com/api/projects/status/tbji72d5s0tagrt9?svg=true)](https://ci.appveyor.com/project/raczben/wexpect)
+[![codecov](https://codecov.io/gh/raczben/wexpect/branch/master/graph/badge.svg)](https://codecov.io/gh/raczben/wexpect)
 
 *Wexpect* is a Windows variant of [pexpect](https://pexpect.readthedocs.io/en/stable/).
 
@@ -9,9 +10,9 @@ them automatically.
 
 ## You need wexpect if...
 
- - you want to control any windows application from python script.
- - you want to write test-automation script for a windows application.
- - you want to post-process some application's standard output.
+ - you want to control any windows console application from python script.
+ - you want to write test-automation script for a windows console application.
+ - you want to automate your job by controlling multiple application parallel, synchoronusly.
 
 ## **Install**
 
