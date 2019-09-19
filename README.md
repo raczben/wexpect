@@ -103,6 +103,49 @@ The wexpect uses [pbr](https://docs.openstack.org/pbr/latest/) for managing rele
  - Install the test build `python -m pip install wexpect`
  - run `python -c "import wexpect;print(wexpect.__version__)"` 
  
+## Basic behaviour
 
+Let's go through the example code:
 
+```python
+import wexpect 
+child = wexpect.spawn('cmd.exe')
+child.expect('>')
+child.sendline('ls')
+child.expect('>')
+print(child.before)
+child.sendline('exit')
+```
+
+### spawn()
+
+`child = wexpect.spawn('cmd.exe')`
+
+Call trace:
+
+ - ::spawn                          (line 289)
+ - spawn_windows::__init__()        (line 1639)
+ - spawn_unix::__init__()           (line 313)
+ - spawn_windows::_spawn()          (line 1660)
+ - Wtty::spawn()                    (line 1932)
+ - Wtty::startChild()               (line 1978)
+ - win32process.CreateProcess()     (line 2024)
+ 
+ 
+
+### expect()
+
+`child.expect('>')`
+
+Call trace:
+
+ - spawn_linux::expect()            (line 1285)
+ - spawn_linux::expect_list()       (line 1365)
+ - spawn_linux::expect_loop()       (line 1397)
+ - spawn_windows::read_nonblocking() (line 1635)
+ - Wtty::read_nonblocking()
+ - Wtty::readConsoleToCursor()
+ - Wtty::readConsole()              (line: 2153)
+ - __consout.ReadConsoleOutputCharacter() (line: 2176)
+    
 

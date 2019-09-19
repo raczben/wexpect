@@ -63,59 +63,85 @@ http://pexpect.sourceforge.net/
 $Id: pexpect.py 507 2007-12-27 02:40:52Z noah $
 """
 
-try:
-    import os, sys, time
-    import select
-    import shutil
-    import re
-    import struct
-    import types
-    import errno
-    import traceback
-    import signal
-    import pkg_resources
-    
-    if sys.platform != 'win32':
-        import pty
-        import tty
-        import termios
-        import resource
-        import fcntl
-    else:
-        from io import StringIO
-        try:
-            from ctypes import windll
-            import pywintypes
-            from win32com.shell.shellcon import CSIDL_APPDATA
-            from win32com.shell.shell import SHGetSpecialFolderPath
-            import win32console
-            import win32process
-            import win32con
-            import win32gui
-            import win32api
-            import win32file
-            import winerror
-        except ImportError as e:
-            raise ImportError(str(e) + "\nThis package requires the win32 python packages.")
-        screenbufferfillchar = '\4'
-        maxconsoleY = 8000
-except ImportError as e:
+#
+# wexpect is windows only. Use pexpect on linux like systems.
+#
+import sys
+if sys.platform != 'win32':
     raise ImportError (str(e) + """
+sys.platform != 'win32': Wexpect supports only Windows.
+Pexpect is intended for UNIX-like operating systems.""")
 
-A critical module was not found. Probably this operating system does not
-support it. Pexpect is intended for UNIX-like operating systems.""")
+#
+# Import built in modules
+#
+import logging
+import os
+import time
+import re
+import select
+import shutil
+import struct
+import types
+import errno
+import traceback
+import signal
+import pkg_resources 
+from io import StringIO
 
+try:
+    from ctypes import windll
+    import pywintypes
+    from win32com.shell.shellcon import CSIDL_APPDATA
+    from win32com.shell.shell import SHGetSpecialFolderPath
+    import win32console
+    import win32process
+    import win32con
+    import win32gui
+    import win32api
+    import win32file
+    import winerror
+except ImportError as e:
+    raise ImportError(str(e) + "\nThis package requires the win32 python packages.\r\nInstall with pip install pywin32")
+
+# 
+# System-wide constants
+#    
+screenbufferfillchar = '\4'
+maxconsoleY = 8000
+
+#
+# Create logger: We write logs only to file. Printing out logs are dangerous, because of the deep
+# console manipulation.
+#
+logger = logging.getLogger('wexpect')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler('wexpect.log')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+
+# Test the logger
+logger.info('wexpect imported; logger working')
+
+# The version is handled by the package: pbr, which derives the version from the git tags.
 try:
     __version__ = pkg_resources.require("wexpect")[0].version
 except:
     __version__ = '0.0.1.unkown0'
 __revision__ = '$Revision: 399 $'
+
 __all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'which',
     'split_command_line', '__version__', '__revision__']
 
-# Exception classes used by this module.
-class ExceptionPexpect(Exception):
 
+####################################################################################################
+#
+#        Exceptions
+#
+####################################################################################################
+
+class ExceptionPexpect(Exception):
     """Base class for all exceptions raised by this module.
     """
 
@@ -148,22 +174,14 @@ class ExceptionPexpect(Exception):
         else:
             return False
 
-class EOF(ExceptionPexpect):
 
-    """Raised when EOF is read from a child. This usually means the child has exited."""
+class EOF(ExceptionPexpect):
+    """Raised when EOF is read from a child. This usually means the child has exited.
+    The user can wait to EOF, which means he waits the end of the execution of the child process."""
 
 class TIMEOUT(ExceptionPexpect):
-
     """Raised when a read time exceeds the timeout. """
 
-##class TIMEOUT_PATTERN(TIMEOUT):
-##    """Raised when the pattern match time exceeds the timeout.
-##    This is different than a read TIMEOUT because the child process may
-##    give output, thus never give a TIMEOUT, but the output
-##    may never match a pattern.
-##    """
-##class MAXBUFFER(ExceptionPexpect):
-##    """Raised when a scan buffer fills before matching an expected pattern."""
 
 def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None, logfile=None, cwd=None, env=None):
 
@@ -2107,8 +2125,6 @@ class Wtty:
                 return ""
             consinfo = self.__consout.GetConsoleScreenBufferInfo()
             startCo = consinfo['CursorPosition']
-            print(records)
-            print(consinfo)
             wrote = self.__consin.WriteConsoleInput(records)
             ts = time.time()
             while self.__consin and self.__consin.PeekConsoleInput(8) != ():

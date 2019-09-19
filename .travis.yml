@@ -1,3 +1,12 @@
+#
+# WARNING   WARNING     WARNING     WARNING     WARNING     WARNING     WARNING     WARNING
+#
+# Travis-ci doesn't supports python runs on windows platform right now (2019.09.09). This medium story
+# https://medium.com/@dirk.avery/travis-ci-python-and-windows-2f9a1b6dd096 can didn't helped either.
+# (wexpect is a compicated case)
+#
+# So travis build paused! See appveyor builds. (https://ci.appveyor.com/project/raczben/wexpect)
+
 language: python
 dist: xenial   # required for Python >= 3.7
 matrix:
