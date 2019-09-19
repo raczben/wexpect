@@ -35,7 +35,6 @@ after_test:
   - cmd: "echo repository: https://test.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
   - cmd: "echo username: __token__ >> %USERPROFILE%\\.pypirc"
   - cmd: "echo password: %testpypipw% >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo  >> %USERPROFILE%\\.pypirc"
   
   # Create source distribution.
   - python -m setup sdist
