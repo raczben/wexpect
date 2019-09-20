@@ -132,7 +132,6 @@ Call trace:
  - win32process.CreateProcess()     (line 2024)
  
  
-
 ### expect()
 
 `child.expect('>')`
@@ -149,3 +148,10 @@ Call trace:
  - __consout.ReadConsoleOutputCharacter() (line: 2176)
     
 
+### sendline()
+
+`child.sendline('ls')`
+
+ - spawn_linux::sendline()          (line 1008)
+ - spawn_windows::send()            (line 1795)
+ - Wtty::write()                    (line 2111)

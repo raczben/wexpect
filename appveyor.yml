@@ -26,10 +26,10 @@ after_test:
   
   # fill .pypirc file.
   # pypi
-  # - cmd: "echo [pypi] > %USERPROFILE%\\.pypirc"
-  # - cmd: "echo repository: https://upload.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
-  # - cmd: "echo username: __token__ >> %USERPROFILE%\\.pypirc"
-  # - cmd: "echo password: %pypipw% >> %USERPROFILE%\\.pypirc"
+  - cmd: "echo [pypi] > %USERPROFILE%\\.pypirc"
+  - cmd: "echo repository: https://upload.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
+  - cmd: "echo username: __token__ >> %USERPROFILE%\\.pypirc"
+  - cmd: "echo password: %pypipw% >> %USERPROFILE%\\.pypirc"
   # testpypi
   - cmd: "echo [testpypi] > %USERPROFILE%\\.pypirc"
   - cmd: "echo repository: https://test.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
@@ -41,4 +41,7 @@ after_test:
   
   # Upload to test pypi
   - twine upload -r testpypi dist\\wexpect*.tar.gz
+  
+  # Upload to offitial pypi
+  - twine upload -r pypi dist\\wexpect*.tar.gz
   
