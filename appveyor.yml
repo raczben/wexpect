@@ -31,7 +31,7 @@ after_test:
   - cmd: "echo username: __token__ >> %USERPROFILE%\\.pypirc"
   - cmd: "echo password: %pypipw% >> %USERPROFILE%\\.pypirc"
   # testpypi
-  - cmd: "echo [testpypi] > %USERPROFILE%\\.pypirc"
+  - cmd: "echo [testpypi] >> %USERPROFILE%\\.pypirc"
   - cmd: "echo repository: https://test.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
   - cmd: "echo username: __token__ >> %USERPROFILE%\\.pypirc"
   - cmd: "echo password: %testpypipw% >> %USERPROFILE%\\.pypirc"
@@ -39,9 +39,9 @@ after_test:
   # Create source distribution.
   - python -m setup sdist
   
-  # Upload to offitial pypi
-  - twine upload dist\\wexpect*.tar.gz
-  
   # Upload to test pypi
   - twine upload -r testpypi dist\\wexpect*.tar.gz
+  
+  # Upload to offitial pypi
+  - twine upload -r pypi dist\\wexpect*.tar.gz
   
