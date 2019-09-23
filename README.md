@@ -79,29 +79,14 @@ To run test, enter into the folder of the wexpect's repo then:
 
 `python -m unittest`
 
-### Release
+### Deploy
+
+The deployment itself is automated and done by [appveyor](https://ci.appveyor.com/project/raczben/wexpect).
+See `after_test` section in [appveyor.yml](appveyor.yml) for more details.
 
 The wexpect uses [pbr](https://docs.openstack.org/pbr/latest/) for managing releasing procedures.
-*Pre-release tasks:*
-
- - First of all be sure that your modification is good, by running the tests.
- - Commit your modification.
- - Create a test build `python -m setup sdist`
- - Upload the test `twine upload -r testpypi dist\wexpect-<VERSION>.tar.gz`  (You must install twine first.)
- - create virtualenv `virtualenv wexpectPy`
- - Activate the virtualenv `.\Scripts\activate.bat`
- - Install the test build `python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple wexpect`
- - run `python -c "import wexpect;print(wexpect.__version__)"` 
- 
-*Release tasks:*
-
- - Tag your commit (see the version tag format.)
- - Run `python -m setup sdist`
- - Upload the archive using: `twine upload dist/wexpect-<VERSION>.tar.gz`
- - create virtualenv `virtualenv wexpectPy2`
- - Activate the virtualenv `.\Scripts\activate.bat`
- - Install the test build `python -m pip install wexpect`
- - run `python -c "import wexpect;print(wexpect.__version__)"` 
+The versioning is handled by the pbr. The *"master-version"* is the git tag. Pbr derives the package
+version from the git tags.
  
 ## Basic behaviour
 
