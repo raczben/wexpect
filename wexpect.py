@@ -110,12 +110,26 @@ except ImportError as e:
 screenbufferfillchar = '\4'
 maxconsoleY = 8000
 
+
+# The version is handled by the package: pbr, which derives the version from the git tags.
+try:
+    __version__ = pkg_resources.require("wexpect")[0].version
+except:
+    __version__ = '0.0.1.unkowndev0'
+__revision__ = '$Revision: 399 $'
+
+__all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'which',
+    'split_command_line', '__version__', '__revision__']
+
 #
 # Create logger: We write logs only to file. Printing out logs are dangerous, because of the deep
 # console manipulation.
 #
 logger = logging.getLogger('wexpect')
-logger.setLevel(logging.DEBUG)
+if 'dev' in __version__ :
+    logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.INFO)
 fh = logging.FileHandler('wexpect.log')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -123,17 +137,6 @@ logger.addHandler(fh)
 
 # Test the logger
 logger.info('wexpect imported; logger working')
-
-# The version is handled by the package: pbr, which derives the version from the git tags.
-try:
-    __version__ = pkg_resources.require("wexpect")[0].version
-except:
-    __version__ = '0.0.1.unkown0'
-__revision__ = '$Revision: 399 $'
-
-__all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'which',
-    'split_command_line', '__version__', '__revision__']
-
 
 ####################################################################################################
 #
