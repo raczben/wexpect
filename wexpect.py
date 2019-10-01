@@ -75,6 +75,7 @@ Pexpect is intended for UNIX-like operating systems.""")
 #
 # Import built in modules
 #
+import warnings
 import logging
 import os
 import time
@@ -110,6 +111,13 @@ except ImportError as e:
 screenbufferfillchar = '\4'
 maxconsoleY = 8000
 
+warnings.simplefilter("always", category=DeprecationWarning)
+no_unix_deprecation_warning = '''
+################################## WARNING ##################################
+{} is deprecated, and will be removed soon.
+Please contact me and report it at github.com/raczben/wexpect if you use it.
+################################## WARNING ##################################
+'''
 
 # The version is handled by the package: pbr, which derives the version from the git tags.
 try:
@@ -534,8 +542,10 @@ class spawn_unix (object):
         s.append('delayafterterminate: ' + str(self.delayafterterminate))
         return '\n'.join(s)
 
-    def _spawn(self,command,args=[]):
 
+    def _spawn(self,command,args=[]):
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::_spawn"), DeprecationWarning)
+        
         """This starts the given command in a child process. This does all the
         fork/exec type of stuff for a pty. This is called by __init__. If args
         is empty then command will be parsed (split on spaces) and args will be
