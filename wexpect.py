@@ -129,9 +129,9 @@ logger = logging.getLogger('wexpect')
 if 'dev' in __version__ :
     logger.setLevel(logging.DEBUG)
 else:
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.WARNING)
 fh = logging.FileHandler('wexpect.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 
@@ -2165,19 +2165,23 @@ class Wtty:
         startY = startCo.Y
         endX = endCo.X
         endY = endCo.Y
+        logger.debug("startX: %d  startY %d  --  endX: %d  endY: %d", startX, startY, endX, endY)
 
         while True:
             startOff = self.getOffset(startX, startY)
             endOff = self.getOffset(endX, endY)
             readlen = endOff - startOff
+            logger.debug("startOff: %d  endOff %d  readlen: %d", startOff, endOff, readlen)
             
             if readlen > 4000:
                 readlen = 4000
                 endPoint = self.getPoint(startOff + 4000)
             else:
                 endPoint = self.getPoint(endOff)
+            logger.debug("endPoint: (%d, %d)", endPoint[0], endPoint[1])
             
             s = self.__consout.ReadConsoleOutputCharacter(readlen, startCo)
+            logger.debug("ReadConsoleOutputCharacter: %s", repr(s))
             ln = len(s)
             self.lastRead += ln
             self.totalRead += ln
@@ -2227,10 +2231,8 @@ class Wtty:
         #log('isSamePos: %r' % isSamePos)
         
         if isSameY or not self.lastReadData.endswith('\r\n'):
-            # Read the current slice again
-            self.totalRead -= self.lastRead
-            self.__currentReadCo.X = 0
-            self.__currentReadCo.Y = self.__bufferY
+            # This part causes the #09 issue. Test remove.
+            logger.debug('Read the current slice again')
         
         #log('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
         
@@ -2881,7 +2883,3 @@ def split_command_line(command_line, escape_char = '^'):
     if arg != '':
         arg_list.append(arg)
     return arg_list
-
-
-
-
