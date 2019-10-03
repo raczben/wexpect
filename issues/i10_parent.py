@@ -6,7 +6,7 @@ import os
 here = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, here)
 
-import i11_unicode_printer
+from long_printer import puskas_wiki
 
 print(wexpect.__version__)
 
@@ -22,33 +22,32 @@ def main():
     
     # Start the child process
     p = wexpect.spawn(longPrinter)
-    
-    print('After Spawn')
-
     # Wait for prompt
     p.expect(prompt)
-    print('After prompt')
-    p.sendline('0')
-    p.expect(prompt)
-    print(p.before)
-    p.sendline('all')
-    print('After all')
-    p.expect(prompt)
-    print('After prompt')
-    print(p.before)
-    p.sendline('0')
-    p.expect(prompt)
-    print(p.before)
-    p.sendline('1')
-    p.expect(prompt)
-    print(p.before)
-    p.sendline('2')
-    p.expect(prompt)
-    print(p.before)
-    p.sendline('all')
-    p.expect(prompt)
-    print(p.before)
-
-        
+    
+    for i in range(10):
+        p.sendline('0')
+        p.expect(prompt)
+        if p.before.splitlines()[1] != puskas_wiki[0]:
+            print(p.before.splitlines()[1])
+            raise Exception()
+            
+        p.sendline('all')
+        p.expect(prompt)
+        for a,b in zip(p.before.splitlines()[1:-1], puskas_wiki):
+            if a!=b:
+                print(p.before.splitlines()[1:-1])
+                raise Exception()
+                
+        for j, paragraph in enumerate(puskas_wiki):
+            p.sendline(str(j))
+            p.expect(prompt)
+            if p.before.splitlines()[1] != paragraph:
+                print(p.before.splitlines()[1])
+                print(i)
+                print(j)
+                print(paragraph)
+                raise Exception()
+            
 main()
         

@@ -2146,7 +2146,7 @@ class Wtty:
         """Converts an offset to a point represented as a tuple."""
         
         x = offset % self.__consSize[0]
-        y = offset / self.__consSize[0]
+        y = offset // self.__consSize[0]
         return (x, y)
    
     def getOffset(self, x, y):
@@ -2157,7 +2157,7 @@ class Wtty:
     def readConsole(self, startCo, endCo):
         """Reads the console area from startCo to endCo and returns it
         as a string."""
-        
+
         buff = []
         self.lastRead = 0
 
@@ -2168,25 +2168,32 @@ class Wtty:
 
         while True:
             startOff = self.getOffset(startX, startY)
+            logger.info("startOff %s" % startOff)
             endOff = self.getOffset(endX, endY)
+            logger.info("endOff %s" % endOff)
             readlen = endOff - startOff
-            
+            logger.info("readlen %s" % readlen)
+
             if readlen > 4000:
                 readlen = 4000
                 endPoint = self.getPoint(startOff + 4000)
+                logger.info("endPoint {}".format(endPoint))
             else:
                 endPoint = self.getPoint(endOff)
-            
+                logger.info("endPoint {}".format(endPoint))
+
             s = self.__consout.ReadConsoleOutputCharacter(readlen, startCo)
             ln = len(s)
             self.lastRead += ln
             self.totalRead += ln
             buff.append(s)
-            
+
             startX, startY = endPoint[0], endPoint[1]
+            logger.info("startX %s startY %s" % (startX, startY))
+            logger.info("endX %s endY %s" % (endX, endY))
             if readlen <= 0 or (startX >= endX and startY >= endY):
                 break
-            
+
         return ''.join(buff)
    
     def parseData(self, s):
@@ -2211,6 +2218,7 @@ class Wtty:
         position and inserts the string into self.__buffer."""
         
         if not self.__consout:
+            logger.info('self.__consout is False')
             return ""
     
         consinfo = self.__consout.GetConsoleScreenBufferInfo()
@@ -2322,10 +2330,10 @@ class Wtty:
                 timeout -= end - start
                                    
         except Exception as e:
-            log(e)
-            log('End Of File (EOF) in Wtty.read_nonblocking().')
+            # This exception seems faulty EOF exception.
+            logger.info('Unknown Exception!!!')
             self.switchBack()
-            raise EOF('End Of File (EOF) in Wtty.read_nonblocking().')
+            raise e
             
         self.switchBack()    
         return s

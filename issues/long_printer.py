@@ -47,24 +47,26 @@ Budapest Honvéd, Puskás helped the club win five Hungarian League titles. He a
 goal scorer in the league in 1947–48, 1949–50, 1950 and 1953, scoring 50, 31, 25 and 27 goals, \
 respectively. In 1948, he was the top goal scorer in Europe.[17]''' ] 
 
+def main():
+    print('Welcome!')
 
-print('Welcome!')
-
-while True:
-    print('> ', end='')
-    num = input()
-    
-    if num == 'exit':
-        break
-    if num == 'all':
-        print('\r\n'.join(puskas_wiki))
-        continue
-    try:
-        if int(num) in range(len(puskas_wiki)):
-            print(puskas_wiki[int(num)])
+    while True:
+        print('> ', end='')
+        num = input()
+        
+        if num == 'exit':
+            break
+        if num == 'all':
+            print('\r\n'.join(puskas_wiki))
             continue
-    except:
-        pass
-    print('unknown command')
-    
+        try:
+            if int(num) in range(len(puskas_wiki)):
+                print(puskas_wiki[int(num)])
+                continue
+        except:
+            pass
+        print('unknown command')
+
+if __name__ == '__main__':
+    main()
     
