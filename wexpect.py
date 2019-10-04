@@ -543,7 +543,7 @@ class spawn_unix (object):
         return '\n'.join(s)
 
 
-    def _spawn(self,command,args=[]):
+    def _spawn(self,command,args=[]): # pragma: no cover
         warnings.warn(no_unix_deprecation_warning.format("spawn_unix::_spawn"), DeprecationWarning)
         
         """This starts the given command in a child process. This does all the
@@ -632,7 +632,7 @@ class spawn_unix (object):
         self.terminated = False
         self.closed = False
 
-    def __fork_pty(self):
+    def __fork_pty(self): # pragma: no cover
         warnings.warn(no_unix_deprecation_warning.format("spawn_unix::__fork_pty"), DeprecationWarning)
         
 
@@ -673,7 +673,7 @@ class spawn_unix (object):
 
         return pid, parent_fd
 
-    def __pty_make_controlling_tty(self, tty_fd):
+    def __pty_make_controlling_tty(self, tty_fd): # pragma: no cover
         warnings.warn(no_unix_deprecation_warning.format("spawn_unix::__pty_make_controlling_tty"), DeprecationWarning)
 
         """This makes the pseudo-terminal the controlling tty. This should be
@@ -739,7 +739,7 @@ class spawn_unix (object):
             self.closed = True
             #self.pid = None
 
-    def flush (self):   # File-like object.
+    def flush (self):   # pragma: no cover # File-like object.
 
         warnings.warn(no_unix_deprecation_warning.format("spawn_unix::flush"), DeprecationWarning)
         """This does nothing. It is here to support the interface for a
@@ -838,7 +838,7 @@ class spawn_unix (object):
         # and blocked on some platforms. TCSADRAIN is probably ideal if it worked.
         termios.tcsetattr(self.child_fd, termios.TCSANOW, attr)
 
-    def read_nonblocking (self, size = 1, timeout = -1):
+    def read_nonblocking (self, size = 1, timeout = -1): # pragma: no cover
         warnings.warn(no_unix_deprecation_warning.format("spawn_unix::read_nonblocking"), DeprecationWarning)
 
         """This reads at most size characters from the child application. It
@@ -1010,7 +1010,7 @@ class spawn_unix (object):
         for s in sequence:
             self.write (s)
 
-    def send(self, s):
+    def send(self, s): # pragma: no cover
         warnings.warn(no_unix_deprecation_warning.format("spawn_unix::send"), DeprecationWarning)
 
 
@@ -1184,7 +1184,7 @@ class spawn_unix (object):
             raise ExceptionPexpect ('Wait was called for a child process that is stopped. This is not supported. Is some other process attempting job control with our child pid?')
         return self.exitstatus
 
-    def isalive(self):
+    def isalive(self): # pragma: no cover
         warnings.warn(no_unix_deprecation_warning.format("spawn_unix::isalive"), DeprecationWarning)
 
         """This tests if the child process is running or not. This is
@@ -1523,7 +1523,8 @@ class spawn_unix (object):
         s = struct.pack('HHHH', r, c, 0, 0)
         fcntl.ioctl(self.fileno(), TIOCSWINSZ, s)
 
-    def interact(self, escape_character = chr(29), input_filter = None, output_filter = None):
+    def interact(self, escape_character = chr(29), input_filter = None, output_filter = None): # pragma: no cover
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::interact"), DeprecationWarning)
 
         """This gives control of the child process to the interactive user (the
         human at the keyboard). Keystrokes are sent to the child process, and
