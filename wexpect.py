@@ -633,6 +633,8 @@ class spawn_unix (object):
         self.closed = False
 
     def __fork_pty(self):
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::__fork_pty"), DeprecationWarning)
+        
 
         """This implements a substitute for the forkpty system call. This
         should be more portable than the pty.fork() function. Specifically,
@@ -672,6 +674,7 @@ class spawn_unix (object):
         return pid, parent_fd
 
     def __pty_make_controlling_tty(self, tty_fd):
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::__pty_make_controlling_tty"), DeprecationWarning)
 
         """This makes the pseudo-terminal the controlling tty. This should be
         more portable than the pty.fork() function. Specifically, this should
@@ -738,6 +741,7 @@ class spawn_unix (object):
 
     def flush (self):   # File-like object.
 
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::flush"), DeprecationWarning)
         """This does nothing. It is here to support the interface for a
         File-like object. """
 
@@ -835,6 +839,7 @@ class spawn_unix (object):
         termios.tcsetattr(self.child_fd, termios.TCSANOW, attr)
 
     def read_nonblocking (self, size = 1, timeout = -1):
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::read_nonblocking"), DeprecationWarning)
 
         """This reads at most size characters from the child application. It
         includes a timeout. If the read does not complete within the timeout
@@ -1006,6 +1011,8 @@ class spawn_unix (object):
             self.write (s)
 
     def send(self, s):
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::send"), DeprecationWarning)
+
 
         """This sends a string to the child process. This returns the number of
         bytes written. If a log file was set then the data is also written to
@@ -1178,6 +1185,7 @@ class spawn_unix (object):
         return self.exitstatus
 
     def isalive(self):
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::isalive"), DeprecationWarning)
 
         """This tests if the child process is running or not. This is
         non-blocking. If the child was terminated then this will read the

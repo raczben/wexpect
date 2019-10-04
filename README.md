@@ -41,6 +41,19 @@ child.sendline('exit')
 
 For more information see [examples](./examples) folder.
 
+## Code Clean up!
+
+Wexpect works only on Windows platforms. There are handy tools for other platforms. Therefore I will
+remove any non-windows code. If you see following warning in your console please contact me to 
+prevent the removal of that function.
+
+```
+################################## WARNING ##################################
+<some func> is deprecated, and will be removed soon.
+Please contact me and report it at github.com/raczben/wexpect if you use it.
+################################## WARNING ##################################
+```
+
 ---
 ## What is it?
 
