@@ -2064,22 +2064,13 @@ class Wtty:
             win32console.AttachConsole(self.conpid)
             self.__consin = win32console.GetStdHandle(win32console.STD_INPUT_HANDLE)
             self.__consout = self.getConsoleOut()
-        except Exception as e:
-            #e = traceback.format_exc()
-            try:
-                win32console.AttachConsole(self.__parentPid)
-            except Exception as ex:
-                pass
-                #log(e)
-                #log(ex)
-            return
-            #self.__consin = None
-            #self.__consout = None
-            #raise e
-                
-                                                      
-                                             
-        
+        except:
+            # In case of any error: We "switch back" (attach) our original console, then raise the
+            # error.
+            win32console.AttachConsole(self.__parentPid)
+            raise
+
+
     def switchBack(self):
         """Releases from the current console and attaches 
         to the parents."""
