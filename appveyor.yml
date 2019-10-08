@@ -42,8 +42,8 @@ after_test:
   # Upload to pypi.
   # More precisely. Upload pypi the master builds, and to test-pypi any other builds.
   # See more at https://stackoverflow.com/a/33662275/2506522
-  - git branch | find "* master" > NUL & IF ERRORLEVEL 1 (  \
-      twine upload -r testpypi dist\\wexpect*.tar.gz        \
-    ) ELSE (                                                \
+  - git branch | find "* master" > NUL & IF ERRORLEVEL 1 (  
+      twine upload -r testpypi dist\\wexpect*.tar.gz        
+    ) ELSE (                                                
       twine upload -r pypi dist\\wexpect*.tar.gz   )        
    
