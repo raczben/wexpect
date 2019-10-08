@@ -2064,13 +2064,22 @@ class Wtty:
             win32console.AttachConsole(self.conpid)
             self.__consin = win32console.GetStdHandle(win32console.STD_INPUT_HANDLE)
             self.__consout = self.getConsoleOut()
+            
+        except pywintypes.error as e:
+            # pywintypes.error: (5, 'AttachConsole', 'Access is denied.')
+            # When child has finished...
+            logging.info(e)
+            # In case of any error: We "switch back" (attach) our original console, then raise the
+            # error.
+            win32console.AttachConsole(self.__parentPid)
+            raise EOF('End Of File (EOF) in switchTo().')
         except:
             # In case of any error: We "switch back" (attach) our original console, then raise the
             # error.
             win32console.AttachConsole(self.__parentPid)
             raise
-
-
+            
+            
     def switchBack(self):
         """Releases from the current console and attaches 
         to the parents."""

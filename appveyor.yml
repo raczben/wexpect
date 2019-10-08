@@ -39,9 +39,10 @@ after_test:
   # Create source distribution.
   - python -m setup sdist
   
-  # Upload to test pypi
-  - twine upload -r testpypi dist\\wexpect*.tar.gz
-  
-  # Upload to offitial pypi
-  - twine upload -r pypi dist\\wexpect*.tar.gz
-  
+  # Upload to pypi.
+  # More precisely. Upload pypi the master builds, and to test-pypi any other builds.
+  - git branch | find "* master" > NUL & IF ERRORLEVEL 1 (  \
+      twine upload -r testpypi dist\\wexpect*.tar.gz        \
+    ) ELSE (                                                \
+      twine upload -r pypi dist\\wexpect*.tar.gz   )        
+   
