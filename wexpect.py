@@ -2071,12 +2071,12 @@ class Wtty:
             logging.info(e)
             # In case of any error: We "switch back" (attach) our original console, then raise the
             # error.
-            win32console.AttachConsole(self.__parentPid)
+            self.switchBack()
             raise EOF('End Of File (EOF) in switchTo().')
         except:
             # In case of any error: We "switch back" (attach) our original console, then raise the
             # error.
-            win32console.AttachConsole(self.__parentPid)
+            self.switchBack()
             raise
             
             
