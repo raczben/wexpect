@@ -10,6 +10,7 @@ environment:
     secure: N+tYP6JrVCZ12LX7MUmHYJ8kx07F4A1hXtmEW01RmhrrQBdylIf0SO/eEfW5f4ox3S4xG/lgGSzNlZckvgifrsYeeBkWwoSH5/AJ3SnOJ7HBVojVt2t3bAznS6x3aPT7WDpwGN7piwus9aHSmpKaOzRoEOBKfgHv3aUzb907C0d0Yr12LU/4cIoTAn7jMziifSq45Z50lsQwzYic/VkarxTh+GXuCCm1Mb8F686H8i6Smm1Q1n9BsXowYnzwdrTZSBVOUtpd48Mh9JKgSNhfmQ==
   testpypipw:
     secure: CcyBI8e/2LdIT2aYIytTAgR4795DNBDM/ztsz1kqZYYOeNc3zlJWLdYWrnjCHn5W6/ZcAHrsxCdCMHvtr6PIVgBRpl2RR3fk2jKTzKqJJsLW871q30BsE0kws32f1IiqfjVtLn8BUC91IJ2xBBXtOYktf1tCMi3zJMSF9+MIOQKIu298bIRnD1Lc+4lzcSZJOn4I7dOMdzlcCMRqhtO58TGwR/hD+22FHjyWVB8nLL18AO+XXS9lHSOUrH6rD5NYvVFZD68oV/RrCGAjRmfMnw==
+  git_branch : $(APPVEYOR_REPO_BRANCH)
 
 
 build: off
@@ -42,6 +43,8 @@ after_test:
   # Upload to pypi.
   # More precisely. Upload pypi the master builds, and to test-pypi any other builds.
   # See more at https://stackoverflow.com/a/39155147/2506522
+  - echo %APPVEYOR_REPO_BRANCH%
+  - echo %git_branch%
   - IF %APPVEYOR_REPO_BRANCH%==master (
       twine upload -r pypi dist\\wexpect*.tar.gz
     ) ELSE (
