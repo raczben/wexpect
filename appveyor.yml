@@ -41,10 +41,10 @@ after_test:
   
   # Upload to pypi.
   # More precisely. Upload pypi the master builds, and to test-pypi any other builds.
-  # See more at https://stackoverflow.com/a/33662275/2506522
+  # See more at https://stackoverflow.com/a/39155147/2506522
   - IF %APPVEYOR_REPO_BRANCH%==master (
       twine upload -r pypi dist\\wexpect*.tar.gz
     ) ELSE (
       twine upload -r testpypi dist\\wexpect*.tar.gz
-    )        
+    )
    
