@@ -2165,7 +2165,7 @@ class Wtty:
         """Converts an offset to a point represented as a tuple."""
         
         x = offset % self.__consSize[0]
-        y = offset / self.__consSize[0]
+        y = offset // self.__consSize[0]
         return (x, y)
    
     def getOffset(self, x, y):
