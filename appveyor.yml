@@ -42,10 +42,11 @@ after_test:
   # More precisely. The master and release builds will be uploaded to pypi. Test branch will be
   # uploaded to test-pypi the test builds.
   # See more at https://stackoverflow.com/a/39155147/2506522
+  
   - IF %APPVEYOR_REPO_BRANCH%==master (
       twine upload -r pypi dist\\wexpect*.tar.gz
     )
-  - IF %APPVEYOR_REPO_TAG%=="true" (
+  - IF %APPVEYOR_REPO_TAG%==true (
       twine upload -r pypi dist\\wexpect*.tar.gz
     )
   - IF %APPVEYOR_REPO_BRANCH%==test (
