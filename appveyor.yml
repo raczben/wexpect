@@ -45,7 +45,7 @@ after_test:
   - IF %APPVEYOR_REPO_BRANCH%==master (
       twine upload -r pypi dist\\wexpect*.tar.gz
     )
-  - IF %APPVEYOR_REPO_TAG% (
+  - IF %APPVEYOR_REPO_TAG%=="true" (
       twine upload -r pypi dist\\wexpect*.tar.gz
     )
   - IF %APPVEYOR_REPO_BRANCH%==test (
