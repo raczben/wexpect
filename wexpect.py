@@ -130,8 +130,8 @@ if 'dev' in __version__ :
     logger.setLevel(logging.DEBUG)
 else:
     logger.setLevel(logging.INFO)
-fh = logging.FileHandler('wexpect.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh = logging.FileHandler('wexpect.log', 'w', 'utf-8')
+formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 
@@ -2142,57 +2142,49 @@ class Wtty:
         self.switchBack()
         return wrote
     
-    def getPoint(self, offset):
+    def getCoord(self, offset):
         """Converts an offset to a point represented as a tuple."""
         
         x = offset % self.__consSize[0]
         y = offset // self.__consSize[0]
-        return (x, y)
+        return win32console.PyCOORDType(x, y)
    
-    def getOffset(self, x, y):
+    def getOffset(self, coord):
         """Converts a tuple-point to an offset."""
         
-        return x + y * self.__consSize[0]
+        return coord.X + coord.Y * self.__consSize[0]
    
     def readConsole(self, startCo, endCo):
         """Reads the console area from startCo to endCo and returns it
         as a string."""
+        logger.info("STARTED")
 
         buff = []
         self.lastRead = 0
 
-        startX = startCo.X
-        startY = startCo.Y
-        endX = endCo.X
-        endY = endCo.Y
-
         while True:
-            startOff = self.getOffset(startX, startY)
-            logger.info("startOff %s" % startOff)
-            endOff = self.getOffset(endX, endY)
-            logger.info("endOff %s" % endOff)
+            startOff = self.getOffset(startCo)
+            endOff = self.getOffset(endCo)
             readlen = endOff - startOff
-            logger.info("readlen %s" % readlen)
-
+            
+            if readlen <= 0:
+                break
+            
+            logger.info("startOff: %d   endOff: %d   readlen: %d", startOff, endOff, readlen)
+                
             if readlen > 4000:
                 readlen = 4000
-                endPoint = self.getPoint(startOff + 4000)
-                logger.info("endPoint {}".format(endPoint))
-            else:
-                endPoint = self.getPoint(endOff)
-                logger.info("endPoint {}".format(endPoint))
+            endPoint = self.getCoord(startOff + readlen)
+            logger.info("endPoint {}".format(endPoint))
 
             s = self.__consout.ReadConsoleOutputCharacter(readlen, startCo)
-            ln = len(s)
-            self.lastRead += ln
-            self.totalRead += ln
+            logger.info("len {}".format(len(s)))
+            self.lastRead += len(s)
+            self.totalRead += len(s)
             buff.append(s)
-
-            startX, startY = endPoint[0], endPoint[1]
-            logger.info("startX %s startY %s" % (startX, startY))
-            logger.info("endX %s endY %s" % (endX, endY))
-            if readlen <= 0 or (startX >= endX and startY >= endY):
-                break
+            logger.info(s.replace(screenbufferfillchar, '*'))
+            
+            startCo = endPoint
 
         return ''.join(buff)
    
@@ -2204,7 +2196,7 @@ class Wtty:
         strlist = []
         for i, c in enumerate(s):
             if c == screenbufferfillchar:
-                if (self.totalRead - self.lastRead + i + 1) % 80 == 0:
+                if (self.totalRead - self.lastRead + i + 1) % self.__consSize[0] == 0:
                     strlist.append('\r\n')
             else:
                 strlist.append(c)
@@ -2249,6 +2241,7 @@ class Wtty:
             raw = raw[self.__consSize[0]:]
         raw = ''.join(rawlist)
         s = self.parseData(raw)
+        logger.info(s)
         for i, line in enumerate(reversed(rawlist)):
             if line.endswith(screenbufferfillchar):
                 # Record the Y offset where the most recent line break was detected
@@ -2268,7 +2261,7 @@ class Wtty:
         
         if s:
             lastReadData = self.lastReadData
-            pos = self.getOffset(self.__currentReadCo.X, self.__currentReadCo.Y)
+            pos = self.getOffset(self.__currentReadCo)
             self.lastReadData = s
             if isSameY or not lastReadData.endswith('\r\n'):
                 # Detect changed lines
