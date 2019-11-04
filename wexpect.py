@@ -75,6 +75,7 @@ Pexpect is intended for UNIX-like operating systems.""")
 #
 # Import built in modules
 #
+import warnings
 import logging
 import os
 import time
@@ -110,6 +111,13 @@ except ImportError as e:
 screenbufferfillchar = '\4'
 maxconsoleY = 8000
 
+warnings.simplefilter("always", category=DeprecationWarning)
+no_unix_deprecation_warning = '''
+################################## WARNING ##################################
+{} is deprecated, and will be removed soon.
+Please contact me and report it at github.com/raczben/wexpect if you use it.
+################################## WARNING ##################################
+'''
 
 # The version is handled by the package: pbr, which derives the version from the git tags.
 try:
@@ -534,8 +542,10 @@ class spawn_unix (object):
         s.append('delayafterterminate: ' + str(self.delayafterterminate))
         return '\n'.join(s)
 
-    def _spawn(self,command,args=[]):
 
+    def _spawn(self,command,args=[]): # pragma: no cover
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::_spawn"), DeprecationWarning)
+        
         """This starts the given command in a child process. This does all the
         fork/exec type of stuff for a pty. This is called by __init__. If args
         is empty then command will be parsed (split on spaces) and args will be
@@ -622,7 +632,9 @@ class spawn_unix (object):
         self.terminated = False
         self.closed = False
 
-    def __fork_pty(self):
+    def __fork_pty(self): # pragma: no cover
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::__fork_pty"), DeprecationWarning)
+        
 
         """This implements a substitute for the forkpty system call. This
         should be more portable than the pty.fork() function. Specifically,
@@ -661,7 +673,8 @@ class spawn_unix (object):
 
         return pid, parent_fd
 
-    def __pty_make_controlling_tty(self, tty_fd):
+    def __pty_make_controlling_tty(self, tty_fd): # pragma: no cover
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::__pty_make_controlling_tty"), DeprecationWarning)
 
         """This makes the pseudo-terminal the controlling tty. This should be
         more portable than the pty.fork() function. Specifically, this should
@@ -726,8 +739,9 @@ class spawn_unix (object):
             self.closed = True
             #self.pid = None
 
-    def flush (self):   # File-like object.
+    def flush (self):   # pragma: no cover # File-like object.
 
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::flush"), DeprecationWarning)
         """This does nothing. It is here to support the interface for a
         File-like object. """
 
@@ -824,7 +838,8 @@ class spawn_unix (object):
         # and blocked on some platforms. TCSADRAIN is probably ideal if it worked.
         termios.tcsetattr(self.child_fd, termios.TCSANOW, attr)
 
-    def read_nonblocking (self, size = 1, timeout = -1):
+    def read_nonblocking (self, size = 1, timeout = -1): # pragma: no cover
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::read_nonblocking"), DeprecationWarning)
 
         """This reads at most size characters from the child application. It
         includes a timeout. If the read does not complete within the timeout
@@ -995,7 +1010,9 @@ class spawn_unix (object):
         for s in sequence:
             self.write (s)
 
-    def send(self, s):
+    def send(self, s): # pragma: no cover
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::send"), DeprecationWarning)
+
 
         """This sends a string to the child process. This returns the number of
         bytes written. If a log file was set then the data is also written to
@@ -1167,7 +1184,8 @@ class spawn_unix (object):
             raise ExceptionPexpect ('Wait was called for a child process that is stopped. This is not supported. Is some other process attempting job control with our child pid?')
         return self.exitstatus
 
-    def isalive(self):
+    def isalive(self): # pragma: no cover
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::isalive"), DeprecationWarning)
 
         """This tests if the child process is running or not. This is
         non-blocking. If the child was terminated then this will read the
@@ -1505,7 +1523,8 @@ class spawn_unix (object):
         s = struct.pack('HHHH', r, c, 0, 0)
         fcntl.ioctl(self.fileno(), TIOCSWINSZ, s)
 
-    def interact(self, escape_character = chr(29), input_filter = None, output_filter = None):
+    def interact(self, escape_character = chr(29), input_filter = None, output_filter = None): # pragma: no cover
+        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::interact"), DeprecationWarning)
 
         """This gives control of the child process to the interactive user (the
         human at the keyboard). Keystrokes are sent to the child process, and
@@ -2045,22 +2064,22 @@ class Wtty:
             win32console.AttachConsole(self.conpid)
             self.__consin = win32console.GetStdHandle(win32console.STD_INPUT_HANDLE)
             self.__consout = self.getConsoleOut()
-        except Exception as e:
-            #e = traceback.format_exc()
-            try:
-                win32console.AttachConsole(self.__parentPid)
-            except Exception as ex:
-                pass
-                #log(e)
-                #log(ex)
-            return
-            #self.__consin = None
-            #self.__consout = None
-            #raise e
-                
-                                                      
-                                             
-        
+            
+        except pywintypes.error as e:
+            # pywintypes.error: (5, 'AttachConsole', 'Access is denied.')
+            # When child has finished...
+            logging.info(e)
+            # In case of any error: We "switch back" (attach) our original console, then raise the
+            # error.
+            self.switchBack()
+            raise EOF('End Of File (EOF) in switchTo().')
+        except:
+            # In case of any error: We "switch back" (attach) our original console, then raise the
+            # error.
+            self.switchBack()
+            raise
+            
+            
     def switchBack(self):
         """Releases from the current console and attaches 
         to the parents."""
@@ -2157,7 +2176,6 @@ class Wtty:
     def readConsole(self, startCo, endCo):
         """Reads the console area from startCo to endCo and returns it
         as a string."""
-        logger.info("STARTED")
 
         buff = []
         self.lastRead = 0
@@ -2170,20 +2188,15 @@ class Wtty:
             if readlen <= 0:
                 break
             
-            logger.info("startOff: %d   endOff: %d   readlen: %d", startOff, endOff, readlen)
-                
             if readlen > 4000:
                 readlen = 4000
             endPoint = self.getCoord(startOff + readlen)
-            logger.info("endPoint {}".format(endPoint))
 
             s = self.__consout.ReadConsoleOutputCharacter(readlen, startCo)
-            logger.info("len {}".format(len(s)))
             self.lastRead += len(s)
             self.totalRead += len(s)
             buff.append(s)
-            logger.info(s.replace(screenbufferfillchar, '*'))
-            
+
             startCo = endPoint
 
         return ''.join(buff)
@@ -2210,7 +2223,6 @@ class Wtty:
         position and inserts the string into self.__buffer."""
         
         if not self.__consout:
-            logger.info('self.__consout is False')
             return ""
     
         consinfo = self.__consout.GetConsoleScreenBufferInfo()
@@ -2241,7 +2253,7 @@ class Wtty:
             raw = raw[self.__consSize[0]:]
         raw = ''.join(rawlist)
         s = self.parseData(raw)
-        logger.info(s)
+        logger.debug(s)
         for i, line in enumerate(reversed(rawlist)):
             if line.endswith(screenbufferfillchar):
                 # Record the Y offset where the most recent line break was detected

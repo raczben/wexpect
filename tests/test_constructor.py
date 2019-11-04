@@ -33,6 +33,10 @@ class TestCaseConstructor(PexpectTestCase.PexpectTestCase):
         p2 = wexpect.spawn('uname', ['-m', '-n', '-p', '-r', '-s', '-v'])
         p2.expect(wexpect.EOF)
         self.assertEqual(p1.before, p2.before)
+        self.assertEqual(str(p1).splitlines()[1:9], str(p2).splitlines()[1:9])
+        
+        run_result = wexpect.run('uname -m -n -p -r -s -v')
+        self.assertEqual(run_result, p2.before)
 
     def test_named_parameters (self):
         '''This tests that named parameters work.
