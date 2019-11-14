@@ -31,7 +31,7 @@ class TestCaseDestructor(PexpectTestCase.PexpectTestCase):
             # Details of garbage collection are different on other implementations
             return 'SKIP'
         gc.collect()
-        time.sleep(3)
+        time.sleep(2)
         p1 = wexpect.spawn('%s hello_world.py' % self.PYTHONBIN)
         p2 = wexpect.spawn('%s hello_world.py' % self.PYTHONBIN)
         p3 = wexpect.spawn('%s hello_world.py' % self.PYTHONBIN)
@@ -50,7 +50,7 @@ class TestCaseDestructor(PexpectTestCase.PexpectTestCase):
         p3 = None
         p4 = None
         gc.collect()
-        time.sleep(3) # Some platforms are slow at gc... Solaris!
+        time.sleep(2) # Some platforms are slow at gc... Solaris!
 
         p1 = wexpect.spawn('%s hello_world.py' % self.PYTHONBIN)
         p2 = wexpect.spawn('%s hello_world.py' % self.PYTHONBIN)
@@ -66,7 +66,7 @@ class TestCaseDestructor(PexpectTestCase.PexpectTestCase):
         del (p3)
         del (p4)
         gc.collect()
-        time.sleep(3)
+        time.sleep(2)
 
         p1 = wexpect.spawn('%s hello_world.py' % self.PYTHONBIN)
         p2 = wexpect.spawn('%s hello_world.py' % self.PYTHONBIN)

@@ -67,7 +67,7 @@ $Id: pexpect.py 507 2007-12-27 02:40:52Z noah $
 # wexpect is windows only. Use pexpect on linux like systems.
 #
 import sys
-if sys.platform != 'win32':
+if sys.platform != 'win32': # pragma: no cover
     raise ImportError (str(e) + """
 sys.platform != 'win32': Wexpect supports only Windows.
 Pexpect is intended for UNIX-like operating systems.""")
@@ -102,7 +102,7 @@ try:
     import win32api
     import win32file
     import winerror
-except ImportError as e:
+except ImportError as e: # pragma: no cover
     raise ImportError(str(e) + "\nThis package requires the win32 python packages.\r\nInstall with pip install pywin32")
 
 # 
@@ -122,7 +122,7 @@ Please contact me and report it at github.com/raczben/wexpect if you use it.
 # The version is handled by the package: pbr, which derives the version from the git tags.
 try:
     __version__ = pkg_resources.require("wexpect")[0].version
-except:
+except: # pragma: no cover
     __version__ = '0.0.1.unkowndev0'
 __revision__ = '$Revision: 399 $'
 
@@ -2347,7 +2347,7 @@ class Wtty:
         finally:
             self.switchBack()
             
-        raise Exception('Unreachable code...')
+        raise Exception('Unreachable code...') # pragma: no cover
     
     
     def refreshConsole(self):
