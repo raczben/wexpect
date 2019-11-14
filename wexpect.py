@@ -1943,6 +1943,7 @@ class Wtty:
         self.__otid = 0
         self.__switch = True
         self.__childProcess = None
+        self.__conProcess = None
         self.codepage = codepage
         self.console = False
         self.lastRead = 0
@@ -1968,7 +1969,10 @@ class Wtty:
             # reached
             if childPid:
                 try:
-                    self.__childProcess = win32api.OpenProcess(win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, childPid)
+                    self.__childProcess = win32api.OpenProcess(
+                        win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, childPid)
+                    self.__conProcess = win32api.OpenProcess(
+                        win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, self.conpid)
                 except pywintypes.error as e:
                     if time.time() > ts + self.timeout:
                         break
@@ -2057,10 +2061,16 @@ class Wtty:
         if not self.__switch:
             return
         
-        if attatched:
-            win32console.FreeConsole()
-        
         try:
+            # No 'attached' check is needed, FreeConsole() can be called multiple times.
+            win32console.FreeConsole()
+            # This is the workaround for #14. The #14 will still occure if the child process
+            # finishes between this `isalive()` check and `AttachConsole(self.conpid)`. (However the
+            # risk is low.)
+            if not self.isalive(console=True):
+                # When child has finished...
+                raise EOF('End Of File (EOF) in switchTo().')
+            
             win32console.AttachConsole(self.conpid)
             self.__consin = win32console.GetStdHandle(win32console.STD_INPUT_HANDLE)
             self.__consout = self.getConsoleOut()
@@ -2308,9 +2318,9 @@ class Wtty:
            waits timeout seconds, and writes the string 'None'
            to the pipe if no data is available after that time.""" 
           
-        self.switchTo()  
-          
-        try:  
+        try:
+            self.switchTo()
+            
             while True:
                 #Wait for child process to be paused
                 if self.__currentReadCo.Y > maxconsoleY:
@@ -2323,25 +2333,21 @@ class Wtty:
                     self.refreshConsole()
                 
                 if len(s) != 0:
-                    self.switchBack()
                     return s
                 
                 if not self.isalive() or timeout <= 0:
-                    self.switchBack()
                     return ''
                 
                 time.sleep(0.001)
                 end = time.time()
                 timeout -= end - start
-                                   
-        except Exception as e:
-            # This exception seems faulty EOF exception.
-            logger.info('Unknown Exception!!!')
+                 
+        except EOF as e:
+            return ''
+        finally:
             self.switchBack()
-            raise e
             
-        self.switchBack()    
-        return s
+        raise Exception('Unreachable code...')
     
     
     def refreshConsole(self):
@@ -2439,10 +2445,13 @@ class Wtty:
             raise
         self.switchBack()
     
-    def isalive(self):
+    def isalive(self, console=False):
         """True if the child is still alive, false otherwise"""
         
-        return win32process.GetExitCodeProcess(self.__childProcess) == win32con.STILL_ACTIVE
+        if console:
+            return win32process.GetExitCodeProcess(self.__conProcess) == win32con.STILL_ACTIVE
+        else:
+            return win32process.GetExitCodeProcess(self.__childProcess) == win32con.STILL_ACTIVE
     
     ###Broken###
     def sendintr(self):
@@ -2535,6 +2544,7 @@ class ConsoleReader: # pragma: no cover
         except Exception as e:
             log(e, 'consolereader', logdir)
             time.sleep(.1)
+        
     
     def handler(self, sig):       
         log(sig, 'consolereader', logdir)
