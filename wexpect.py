@@ -1431,15 +1431,6 @@ class spawn_windows (spawn_unix):
         c = self.wtty.write(s)
         return c
 
-    ### UNIMPLEMENTED ###
-    def sendcontrol(self, char):
-        raise ExceptionPexpect ('sendcontrol() is not supported on windows')
-        
-    ### UNIMPLEMENTED ###
-    ### Parent buffer does not wait for endline by default.
-    def sendeof(self):
-        raise ExceptionPexpect ('sendeof() is not supported on windows')
-        
     def sendintr(self):
         """This sends a SIGINT to the child. It does not require
         the SIGINT to be the first character on a line. """
@@ -2051,24 +2042,6 @@ class Wtty:
             return win32process.GetExitCodeProcess(self.__conProcess) == win32con.STILL_ACTIVE
         else:
             return win32process.GetExitCodeProcess(self.__childProcess) == win32con.STILL_ACTIVE
-    
-    ###Broken###
-    def sendintr(self):
-        """Sends the sigint signal to the child."""
-        
-        raise ExceptionPexpect ('sendintr() is currently not supported')
-        
-        self.switchTo()
-        try:
-            time.sleep(.15)
-            win32api.SetConsoleCtrlHandler(None, True)
-            time.sleep(.15)
-            win32api.win32console.GenerateConsoleCtrlEvent(0, 0)
-            time.sleep(.25)
-        except:
-            self.switchBack()
-            raise
-        self.switchBack()
     
 class ConsoleReader: # pragma: no cover
    
