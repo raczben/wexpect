@@ -319,13 +319,13 @@ def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, log
     else:
         return spawn_unix(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env)
         
-class spawn_unix (object):
 
+class spawn_windows ():
     """This is the main class interface for Pexpect. Use this class to start
     and control child applications. """
 
-    def __init__(self, command, args=[], timeout=30, maxread=2000, searchwindowsize=None, logfile=None, cwd=None, env=None):
-
+    def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None, logfile=None, cwd=None, env=None,
+                 codepage=None):
         """This is the constructor. The command parameter may be a string that
         includes a command and any arguments to the command. For example::
 
@@ -434,6 +434,8 @@ class spawn_unix (object):
         stores the status returned by os.waitpid. You can interpret this using
         os.WIFEXITED/os.WEXITSTATUS or os.WIFSIGNALED/os.TERMSIG. """
 
+        self.codepage = codepage
+        
         if sys.platform != 'win32':
             self.STDIN_FILENO = pty.STDIN_FILENO
             self.STDOUT_FILENO = pty.STDOUT_FILENO
@@ -490,24 +492,19 @@ class spawn_unix (object):
         else:
             self._spawn (command, args)
 
+        #__irix_hack set by super, windows doesn't need it.
+        self.__irix_hack = None
+
+
     def __del__(self):
-
         """This makes sure that no system resources are left open. Python only
-        garbage collects Python objects. OS file descriptors are not Python
-        objects, so they must be handled explicitly. If the child file
-        descriptor was opened outside of this class (passed to the constructor)
-        then this does not close it. """
-
-        if not self.closed:
-            # It is possible for __del__ methods to execute during the
-            # teardown of the Python VM itself. Thus self.close() may
-            # trigger an exception because os.close may be None.
-            # -- Fernando Perez
-            try:
-                self.close()
-            except AttributeError:
-                pass
-
+        garbage collects Python objects, not the child console."""
+        
+        try:
+            self.wtty.terminate_child()
+        except:
+            pass
+           
     def __str__(self):
 
         """This returns a human-readable string that represents the state of
@@ -541,40 +538,81 @@ class spawn_unix (object):
         s.append('delayafterclose: ' + str(self.delayafterclose))
         s.append('delayafterterminate: ' + str(self.delayafterterminate))
         return '\n'.join(s)
+ 
+    def _spawn(self,command,args=[]):
+        """This starts the given command in a child process. This does all the
+        fork/exec type of stuff for a pty. This is called by __init__. If args
+        is empty then command will be parsed (split on spaces) and args will be
+        set to parsed arguments. """
 
+        # The pid and child_fd of this object get set by this method.
+        # Note that it is difficult for this method to fail.
+        # You cannot detect if the child process cannot start.
+        # So the only way you can tell if the child process started
+        # or not is to try to read from the file descriptor. If you get
+        # EOF immediately then it means that the child is already dead.
+        # That may not necessarily be bad because you may haved spawned a child
+        # that performs some task; creates no stdout output; and then dies.
+
+        # If command is an int type then it may represent a file descriptor.
+        if type(command) == type(0):
+            raise ExceptionPexpect ('Command is an int type. If this is a file descriptor then maybe you want to use fdpexpect.fdspawn which takes an existing file descriptor instead of a command string.')
+
+        if type (args) != type([]):
+            raise TypeError ('The argument, args, must be a list.')
+   
+        if args == []:
+            self.args = split_command_line(command)
+            self.command = self.args[0]
+        else:
+            self.args = args[:] # work with a copy
+            self.args.insert (0, command)
+            self.command = command    
+            
+        command_with_path = shutil.which(self.command)
+        if command_with_path is None:
+           raise ExceptionPexpect ('The command was not found or was not executable: %s.' % self.command)
+        self.command = command_with_path
+        self.args[0] = self.command
+
+        self.name = '<' + ' '.join (self.args) + '>'
+
+        #assert self.pid is None, 'The pid member should be None.'
+        #assert self.command is not None, 'The command member should not be None.'
+
+        self.wtty = Wtty(codepage=self.codepage)        
+    
+        if self.cwd is not None:
+            os.chdir(self.cwd)
         
+        self.child_fd = self.wtty.spawn(self.command, self.args, self.env)
+        
+        if self.cwd is not None:
+            # Restore the original working dir
+            os.chdir(self.ocwd)
+            
+        self.terminated = False
+        self.closed = False
+        self.pid = self.wtty.pid
+        
+
     def fileno (self):   # File-like object.
+        """There is no child fd."""
+        
+        return 0
 
-        """This returns the file descriptor of the pty for the child.
-        """
-
-        return self.child_fd
-
-    def close (self, force=True):   # File-like object.
-
-        """This closes the connection with the child application. Note that
-        calling close() more than once is valid. This emulates standard Python
-        behavior with files. Set force to True if you want to make sure that
-        the child is terminated (SIGKILL is sent if the child ignores SIGHUP
-        and SIGINT). """
-
+    def close(self, force=True):   # File-like object.
+        """ Closes the child console."""
+        
+        self.closed = self.terminate(force)
         if not self.closed:
-            self.flush()
-            os.close (self.child_fd)
-            time.sleep(self.delayafterclose) # Give kernel time to update process status.
-            if self.isalive():
-                if not self.terminate(force):
-                    raise ExceptionPexpect ('close() could not terminate the child using terminate()')
-            self.child_fd = -1
-            self.closed = True
-            #self.pid = None
+            raise ExceptionPexpect ('close() could not terminate the child using terminate()')
+        self.closed = True
 
-    def isatty (self):   # File-like object.
-
-        """This returns True if the file descriptor is open and connected to a
-        tty(-like) device, else False. """
-
-        return os.isatty(self.child_fd)
+    def isatty(self):   # File-like object.
+        """The child is always created with a console."""
+        
+        return True
 
     def waitnoecho (self, timeout=-1):
 
@@ -609,57 +647,17 @@ class spawn_unix (object):
             time.sleep(0.1)
 
     def getecho (self):
-
         """This returns the terminal echo mode. This returns True if echo is
         on or False if echo is off. Child applications that are expecting you
-        to enter a password often set ECHO False. See waitnoecho(). """
+        to enter a password often set ECHO False. See waitnoecho()."""
 
-        attr = termios.tcgetattr(self.child_fd)
-        if attr[3] & termios.ECHO:
-            return True
-        return False
+        return self.wtty.getecho()
 
     def setecho (self, state):
-
-        """This sets the terminal echo mode on or off. Note that anything the
-        child sent before the echo will be lost, so you should be sure that
-        your input buffer is empty before you call setecho(). For example, the
-        following will work as expected::
-
-            p = pexpect.spawn('cat')
-            p.sendline ('1234') # We will see this twice (once from tty echo and again from cat).
-            p.expect (['1234'])
-            p.expect (['1234'])
-            p.setecho(False) # Turn off tty echo
-            p.sendline ('abcd') # We will set this only once (echoed by cat).
-            p.sendline ('wxyz') # We will set this only once (echoed by cat)
-            p.expect (['abcd'])
-            p.expect (['wxyz'])
-
-        The following WILL NOT WORK because the lines sent before the setecho
-        will be lost::
-
-            p = pexpect.spawn('cat')
-            p.sendline ('1234') # We will see this twice (once from tty echo and again from cat).
-            p.setecho(False) # Turn off tty echo
-            p.sendline ('abcd') # We will set this only once (echoed by cat).
-            p.sendline ('wxyz') # We will set this only once (echoed by cat)
-            p.expect (['1234'])
-            p.expect (['1234'])
-            p.expect (['abcd'])
-            p.expect (['wxyz'])
-        """
-
-        self.child_fd
-        attr = termios.tcgetattr(self.child_fd)
-        if state:
-            attr[3] = attr[3] | termios.ECHO
-        else:
-            attr[3] = attr[3] & ~termios.ECHO
-        # I tried TCSADRAIN and TCSAFLUSH, but these were inconsistent
-        # and blocked on some platforms. TCSADRAIN is probably ideal if it worked.
-        termios.tcsetattr(self.child_fd, termios.TCSANOW, attr)
-
+        """This sets the terminal echo mode on or off."""
+        
+        self.wtty.setecho(state)
+        
     def read (self, size = -1):   # File-like object.
 
         """This reads at most "size" bytes from the file (less if the read hits
@@ -735,6 +733,54 @@ class spawn_unix (object):
                 break
             lines.append(line)
         return lines
+
+    def read_nonblocking (self, size = 1, timeout = -1):
+        """This reads at most size characters from the child application. It
+        includes a timeout. If the read does not complete within the timeout
+        period then a TIMEOUT exception is raised. If the end of file is read
+        then an EOF exception will be raised. If a log file was set using
+        setlog() then all data will also be written to the log file.
+
+        If timeout is None then the read may block indefinitely. If timeout is -1
+        then the self.timeout value is used. If timeout is 0 then the child is
+        polled and if there was no data immediately ready then this will raise
+        a TIMEOUT exception.
+
+        The timeout refers only to the amount of time to read at least one
+        character. This is not effected by the 'size' parameter, so if you call
+        read_nonblocking(size=100, timeout=30) and only one character is
+        available right away then one character will be returned immediately.
+        It will not wait for 30 seconds for another 99 characters to come in.
+
+        This is a wrapper around Wtty.read(). """
+
+        if self.closed:
+            raise ValueError ('I/O operation on closed file in read_nonblocking().')
+        
+        if timeout == -1:
+            timeout = self.timeout
+         
+        s = self.wtty.read_nonblocking(timeout, size)
+        
+        if s == '':
+            if not self.wtty.isalive():
+                self.flag_eof = True
+                raise EOF('End Of File (EOF) in read_nonblocking().')
+            if timeout is None:
+                # Do not raise TIMEOUT because we might be waiting for EOF
+                # sleep to keep CPU utilization down
+                time.sleep(.05)
+            else:
+                raise TIMEOUT ('Timeout exceeded in read_nonblocking().')
+        
+        if self.logfile is not None:
+            self.logfile.write (s)
+            self.logfile.flush()
+        if self.logfile_read is not None:
+            self.logfile_read.write (s)
+            self.logfile_read.flush()
+
+        return s
 
     def write(self, s):   # File-like object.
 
@@ -822,17 +868,26 @@ class spawn_unix (object):
             char = chr(4)
         self.send(char)
 
-    def sendintr(self):
+    def send(self, s):
+        """This sends a string to the child process. This returns the number of
+        bytes written. If a log file was set then the data is also written to
+        the log. """
+        
+        (self.delaybeforesend)
+        if self.logfile is not None:
+            self.logfile.write (s)
+            self.logfile.flush()
+        if self.logfile_send is not None:
+            self.logfile_send.write (s)
+            self.logfile_send.flush()
+        c = self.wtty.write(s)
+        return c
 
+    def sendintr(self):
         """This sends a SIGINT to the child. It does not require
         the SIGINT to be the first character on a line. """
-
-        if hasattr(termios, 'VINTR'):
-            char = termios.tcgetattr(self.child_fd)[6][termios.VINTR]
-        else:
-            # platform does not define VINTR so assume CTRL-C
-            char = chr(3)
-        self.send (char)
+        
+        self.wtty.sendintr()
 
     def eof (self):
 
@@ -842,82 +897,60 @@ class spawn_unix (object):
         return self.flag_eof
 
     def terminate(self, force=False):
-
-        """This forces a child process to terminate. It starts nicely with
-        SIGHUP and SIGINT. If "force" is True then moves onto SIGKILL. This
-        returns True if the child was terminated. This returns False if the
-        child could not be terminated. """
+        """Terminate the child. Force not used. """
 
         if not self.isalive():
             return True
-        try:
-            self.kill(signal.SIGHUP)
-            time.sleep(self.delayafterterminate)
-            if not self.isalive():
-                return True
-            self.kill(signal.SIGCONT)
-            time.sleep(self.delayafterterminate)
-            if not self.isalive():
-                return True
-            self.kill(signal.SIGINT)
-            time.sleep(self.delayafterterminate)
-            if not self.isalive():
-                return True
-            if force:
-                self.kill(signal.SIGKILL)
-                time.sleep(self.delayafterterminate)
-                if not self.isalive():
-                    return True
-                else:
-                    return False
-            return False
-        except OSError as e:
-            # I think there are kernel timing issues that sometimes cause
-            # this to happen. I think isalive() reports True, but the
-            # process is dead to the kernel.
-            # Make one last attempt to see if the kernel is up to date.
-            time.sleep(self.delayafterterminate)
-            if not self.isalive():
-                return True
-            else:
-                return False
+            
+        self.wtty.terminate_child()
+        time.sleep(self.delayafterterminate)
+        if not self.isalive():
+            return True
+                
+        return False
 
+    def kill(self, sig):
+        """Sig == sigint for ctrl-c otherwise the child is terminated."""
+        
+        if not self.isalive():
+            return
+            
+        if sig == signal.SIGINT:
+            self.wtty.sendintr()
+        else:
+            self.wtty.terminate_child()
+        
     def wait(self):
-
         """This waits until the child exits. This is a blocking call. This will
         not read any data from the child, so this will block forever if the
         child has unread output and has terminated. In other words, the child
         may have printed output then called exit(); but, technically, the child
-        is still alive until its output is read. """
-
-        if self.isalive():
-            pid, status = os.waitpid(self.pid, 0)
-        else:
+        is still alive until its output is read."""
+        
+        if not self.isalive():
             raise ExceptionPexpect ('Cannot wait for dead child process.')
-        self.exitstatus = os.WEXITSTATUS(status)
-        if os.WIFEXITED (status):
-            self.status = status
-            self.exitstatus = os.WEXITSTATUS(status)
-            self.signalstatus = None
-            self.terminated = True
-        elif os.WIFSIGNALED (status):
-            self.status = status
-            self.exitstatus = None
-            self.signalstatus = os.WTERMSIG(status)
-            self.terminated = True
-        elif os.WIFSTOPPED (status):
-            raise ExceptionPexpect ('Wait was called for a child process that is stopped. This is not supported. Is some other process attempting job control with our child pid?')
+        
+        # We can't use os.waitpid under Windows because of 'permission denied' 
+        # exception? Perhaps if not running as admin (or UAC enabled under 
+        # Vista/7). Simply loop and wait for child to exit.
+        while self.isalive():
+            time.sleep(.05)  # Keep CPU utilization down
+        
         return self.exitstatus
-
-    def kill(self, sig):
-
-        """This sends the given signal to the child application. In keeping
-        with UNIX tradition it has a misleading name. It does not necessarily
-        kill the child unless you send the right signal. """
-
-        # Same as os.kill, but the pid is given for you.
-        if self.isalive():
-            os.kill(self.pid, sig)
+        
+    def isalive(self):
+        """Determines if the child is still alive."""
+        
+        if self.terminated:
+            return False
+        
+        if self.wtty.isalive():
+            return True
+        else:
+            self.exitstatus = win32process.GetExitCodeProcess(self.wtty.getchild())
+            self.status = (self.pid, self.exitstatus << 8)  # left-shift exit status by 8 bits like os.waitpid
+            self.terminated = True
+            return False
 
     def compile_pattern_list(self, patterns):
 
@@ -1152,38 +1185,28 @@ class spawn_unix (object):
             raise
 
     def getwinsize(self):
-
         """This returns the terminal window size of the child tty. The return
         value is a tuple of (rows, cols). """
-
-        TIOCGWINSZ = getattr(termios, 'TIOCGWINSZ', 1074295912)
-        s = struct.pack('HHHH', 0, 0, 0, 0)
-        x = fcntl.ioctl(self.fileno(), TIOCGWINSZ, s)
-        return struct.unpack('HHHH', x)[0:2]
+        
+        return self.wtty.getwinsize()
 
     def setwinsize(self, r, c):
-
-        """This sets the terminal window size of the child tty. This will cause
-        a SIGWINCH signal to be sent to the child. This does not change the
-        physical window size. It changes the size reported to TTY-aware
-        applications like vi or curses -- applications that respond to the
-        SIGWINCH signal. """
-
-        # Check for buggy platforms. Some Python versions on some platforms
-        # (notably OSF1 Alpha and RedHat 7.1) truncate the value for
-        # termios.TIOCSWINSZ. It is not clear why this happens.
-        # These platforms don't seem to handle the signed int very well;
-        # yet other platforms like OpenBSD have a large negative value for
-        # TIOCSWINSZ and they don't have a truncate problem.
-        # Newer versions of Linux have totally different values for TIOCSWINSZ.
-        # Note that this fix is a hack.
-        TIOCSWINSZ = getattr(termios, 'TIOCSWINSZ', -2146929561)
-        if TIOCSWINSZ == 2148037735: # L is not required in Python >= 2.2.
-            TIOCSWINSZ = -2146929561 # Same bits, but with sign.
-        # Note, assume ws_xpixel and ws_ypixel are zero.
-        s = struct.pack('HHHH', r, c, 0, 0)
-        fcntl.ioctl(self.fileno(), TIOCSWINSZ, s)
-
+        """Set the size of the child screen buffer. """
+    
+        self.wtty.setwinsize(r, c)
+      
+    ### Prototype changed
+    def interact(self):
+        """Makes the child console visible for interaction"""
+        
+        self.wtty.interact()
+    
+    ### Prototype changed
+    def stop_interact(self):
+        """Hides the child console from the user."""
+    
+        self.wtty.stop_interact()
+        
     def __interact_writen(self, fd, data):
 
         """This is used by the interact() method.
@@ -1252,270 +1275,6 @@ class spawn_unix (object):
                     raise
 
 
-##############################################################################
-# End of spawn_unix class
-##############################################################################
-
-class spawn_windows (spawn_unix):
-    """This is the main class interface for Pexpect. Use this class to start
-    and control child applications. """
-
-    def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None, logfile=None, cwd=None, env=None,
-                 codepage=None):
-        
-        self.codepage = codepage
-        
-        # Super class init function
-        super(spawn_windows, self).__init__(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env)
-        
-        #__irix_hack set by super, windows doesn't need it.
-        self.__irix_hack = None
-
-
-    def __del__(self):
-        """This makes sure that no system resources are left open. Python only
-        garbage collects Python objects, not the child console."""
-        
-        try:
-            self.wtty.terminate_child()
-        except:
-            pass
-            
-    def _spawn(self,command,args=[]):
-        """This starts the given command in a child process. This does all the
-        fork/exec type of stuff for a pty. This is called by __init__. If args
-        is empty then command will be parsed (split on spaces) and args will be
-        set to parsed arguments. """
-
-        # The pid and child_fd of this object get set by this method.
-        # Note that it is difficult for this method to fail.
-        # You cannot detect if the child process cannot start.
-        # So the only way you can tell if the child process started
-        # or not is to try to read from the file descriptor. If you get
-        # EOF immediately then it means that the child is already dead.
-        # That may not necessarily be bad because you may haved spawned a child
-        # that performs some task; creates no stdout output; and then dies.
-
-        # If command is an int type then it may represent a file descriptor.
-        if type(command) == type(0):
-            raise ExceptionPexpect ('Command is an int type. If this is a file descriptor then maybe you want to use fdpexpect.fdspawn which takes an existing file descriptor instead of a command string.')
-
-        if type (args) != type([]):
-            raise TypeError ('The argument, args, must be a list.')
-   
-        if args == []:
-            self.args = split_command_line(command)
-            self.command = self.args[0]
-        else:
-            self.args = args[:] # work with a copy
-            self.args.insert (0, command)
-            self.command = command    
-            
-        command_with_path = shutil.which(self.command)
-        if command_with_path is None:
-           raise ExceptionPexpect ('The command was not found or was not executable: %s.' % self.command)
-        self.command = command_with_path
-        self.args[0] = self.command
-
-        self.name = '<' + ' '.join (self.args) + '>'
-
-        #assert self.pid is None, 'The pid member should be None.'
-        #assert self.command is not None, 'The command member should not be None.'
-
-        self.wtty = Wtty(codepage=self.codepage)        
-    
-        if self.cwd is not None:
-            os.chdir(self.cwd)
-        
-        self.child_fd = self.wtty.spawn(self.command, self.args, self.env)
-        
-        if self.cwd is not None:
-            # Restore the original working dir
-            os.chdir(self.ocwd)
-            
-        self.terminated = False
-        self.closed = False
-        self.pid = self.wtty.pid
-        
-
-    def fileno (self):   # File-like object.
-        """There is no child fd."""
-        
-        return 0
-
-    def close(self, force=True):   # File-like object.
-        """ Closes the child console."""
-        
-        self.closed = self.terminate(force)
-        if not self.closed:
-            raise ExceptionPexpect ('close() could not terminate the child using terminate()')
-        self.closed = True
-
-    def isatty(self):   # File-like object.
-        """The child is always created with a console."""
-        
-        return True
-
-    def getecho (self):
-        """This returns the terminal echo mode. This returns True if echo is
-        on or False if echo is off. Child applications that are expecting you
-        to enter a password often set ECHO False. See waitnoecho()."""
-
-        return self.wtty.getecho()
-
-    def setecho (self, state):
-        """This sets the terminal echo mode on or off."""
-        
-        self.wtty.setecho(state)
-        
-    def read_nonblocking (self, size = 1, timeout = -1):
-        """This reads at most size characters from the child application. It
-        includes a timeout. If the read does not complete within the timeout
-        period then a TIMEOUT exception is raised. If the end of file is read
-        then an EOF exception will be raised. If a log file was set using
-        setlog() then all data will also be written to the log file.
-
-        If timeout is None then the read may block indefinitely. If timeout is -1
-        then the self.timeout value is used. If timeout is 0 then the child is
-        polled and if there was no data immediately ready then this will raise
-        a TIMEOUT exception.
-
-        The timeout refers only to the amount of time to read at least one
-        character. This is not effected by the 'size' parameter, so if you call
-        read_nonblocking(size=100, timeout=30) and only one character is
-        available right away then one character will be returned immediately.
-        It will not wait for 30 seconds for another 99 characters to come in.
-
-        This is a wrapper around Wtty.read(). """
-
-        if self.closed:
-            raise ValueError ('I/O operation on closed file in read_nonblocking().')
-        
-        if timeout == -1:
-            timeout = self.timeout
-         
-        s = self.wtty.read_nonblocking(timeout, size)
-        
-        if s == '':
-            if not self.wtty.isalive():
-                self.flag_eof = True
-                raise EOF('End Of File (EOF) in read_nonblocking().')
-            if timeout is None:
-                # Do not raise TIMEOUT because we might be waiting for EOF
-                # sleep to keep CPU utilization down
-                time.sleep(.05)
-            else:
-                raise TIMEOUT ('Timeout exceeded in read_nonblocking().')
-        
-        if self.logfile is not None:
-            self.logfile.write (s)
-            self.logfile.flush()
-        if self.logfile_read is not None:
-            self.logfile_read.write (s)
-            self.logfile_read.flush()
-
-        return s
-
-    def send(self, s):
-        """This sends a string to the child process. This returns the number of
-        bytes written. If a log file was set then the data is also written to
-        the log. """
-        
-        (self.delaybeforesend)
-        if self.logfile is not None:
-            self.logfile.write (s)
-            self.logfile.flush()
-        if self.logfile_send is not None:
-            self.logfile_send.write (s)
-            self.logfile_send.flush()
-        c = self.wtty.write(s)
-        return c
-
-    def sendintr(self):
-        """This sends a SIGINT to the child. It does not require
-        the SIGINT to be the first character on a line. """
-        
-        self.wtty.sendintr()
-
-    def terminate(self, force=False):
-        """Terminate the child. Force not used. """
-
-        if not self.isalive():
-            return True
-            
-        self.wtty.terminate_child()
-        time.sleep(self.delayafterterminate)
-        if not self.isalive():
-            return True
-                
-        return False
-
-    def kill(self, sig):
-        """Sig == sigint for ctrl-c otherwise the child is terminated."""
-        
-        if not self.isalive():
-            return
-            
-        if sig == signal.SIGINT:
-            self.wtty.sendintr()
-        else:
-            self.wtty.terminate_child()
-        
-    def wait(self):
-        """This waits until the child exits. This is a blocking call. This will
-        not read any data from the child, so this will block forever if the
-        child has unread output and has terminated. In other words, the child
-        may have printed output then called exit(); but, technically, the child
-        is still alive until its output is read."""
-        
-        if not self.isalive():
-            raise ExceptionPexpect ('Cannot wait for dead child process.')
-        
-        # We can't use os.waitpid under Windows because of 'permission denied' 
-        # exception? Perhaps if not running as admin (or UAC enabled under 
-        # Vista/7). Simply loop and wait for child to exit.
-        while self.isalive():
-            time.sleep(.05)  # Keep CPU utilization down
-        
-        return self.exitstatus
-        
-    def isalive(self):
-        """Determines if the child is still alive."""
-        
-        if self.terminated:
-            return False
-        
-        if self.wtty.isalive():
-            return True
-        else:
-            self.exitstatus = win32process.GetExitCodeProcess(self.wtty.getchild())
-            self.status = (self.pid, self.exitstatus << 8)  # left-shift exit status by 8 bits like os.waitpid
-            self.terminated = True
-            return False
-
-    def getwinsize(self):
-        """This returns the terminal window size of the child tty. The return
-        value is a tuple of (rows, cols). """
-        
-        return self.wtty.getwinsize()
-
-    def setwinsize(self, r, c):
-        """Set the size of the child screen buffer. """
-    
-        self.wtty.setwinsize(r, c)
-      
-    ### Prototype changed
-    def interact(self):
-        """Makes the child console visible for interaction"""
-        
-        self.wtty.interact()
-    
-    ### Prototype changed
-    def stop_interact(self):
-        """Hides the child console from the user."""
-    
-        self.wtty.stop_interact()
-        
 ##############################################################################
 # End of spawn_windows class
 ##############################################################################
