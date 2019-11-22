@@ -1251,22 +1251,6 @@ class spawn_unix (object):
                 else: # something else caused the select.error, so this really is an exception
                     raise
 
-##############################################################################
-# The following methods are no longer supported or allowed.
-
-    def setmaxread (self, maxread):
-
-        """This method is no longer supported or allowed. I don't like getters
-        and setters without a good reason. """
-
-        raise ExceptionPexpect ('This method is no longer supported or allowed. Just assign a value to the maxread member variable.')
-
-    def setlog (self, fileobject):
-
-        """This method is no longer supported or allowed.
-        """
-
-        raise ExceptionPexpect ('This method is no longer supported or allowed. Just assign a value to the logfile member variable.')
 
 ##############################################################################
 # End of spawn_unix class
@@ -2445,16 +2429,6 @@ def log(e, suffix='', logdir=None):
                                                       time.localtime(ts)), 
                                        ('%3f' % (ts - int(ts)))[2:5], e))
             fout.close()   
-
-def excepthook(etype, value, tb):
-	log(''.join(traceback.format_exception(etype, value, tb)))
-
-
-def which (filename):
-    from warnings import warn
-    warn("Which is deprecated. You should use shutil.which instead")
-    return shutil.which(filename)
-
 
 def join_args(args):
     """Joins arguments into a command line. It quotes all arguments that contain
