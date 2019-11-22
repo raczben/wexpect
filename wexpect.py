@@ -542,177 +542,7 @@ class spawn_unix (object):
         s.append('delayafterterminate: ' + str(self.delayafterterminate))
         return '\n'.join(s)
 
-
-    def _spawn(self,command,args=[]): # pragma: no cover
-        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::_spawn"), DeprecationWarning)
         
-        """This starts the given command in a child process. This does all the
-        fork/exec type of stuff for a pty. This is called by __init__. If args
-        is empty then command will be parsed (split on spaces) and args will be
-        set to parsed arguments. """
-
-        # The pid and child_fd of this object get set by this method.
-        # Note that it is difficult for this method to fail.
-        # You cannot detect if the child process cannot start.
-        # So the only way you can tell if the child process started
-        # or not is to try to read from the file descriptor. If you get
-        # EOF immediately then it means that the child is already dead.
-        # That may not necessarily be bad because you may haved spawned a child
-        # that performs some task; creates no stdout output; and then dies.
-
-        # If command is an int type then it may represent a file descriptor.
-        if type(command) == type(0):
-            raise ExceptionPexpect ('Command is an int type. If this is a file descriptor then maybe you want to use fdpexpect.fdspawn which takes an existing file descriptor instead of a command string.')
-
-        if type (args) != type([]):
-            raise TypeError ('The argument, args, must be a list.')
-
-        if args == []:
-            self.args = split_command_line(command)
-            self.command = self.args[0]
-        else:
-            self.args = args[:] # work with a copy
-            self.args.insert (0, command)
-            self.command = command
-
-        command_with_path = shutil.which(self.command)
-        if command_with_path is None:
-            raise ExceptionPexpect ('The command was not found or was not executable: %s.' % self.command)
-        self.command = command_with_path
-        self.args[0] = self.command
-
-        self.name = '<' + ' '.join (self.args) + '>'
-
-        assert self.pid is None, 'The pid member should be None.'
-        assert self.command is not None, 'The command member should not be None.'
-
-        if self.use_native_pty_fork:
-            try:
-                self.pid, self.child_fd = pty.fork()
-            except OSError as e:
-                raise ExceptionPexpect('Error! pty.fork() failed: ' + str(e))
-        else: # Use internal __fork_pty
-            self.pid, self.child_fd = self.__fork_pty()
-
-        if self.pid == 0: # Child
-            try:
-                self.child_fd = sys.stdout.fileno() # used by setwinsize()
-                self.setwinsize(24, 80)
-            except:
-                # Some platforms do not like setwinsize (Cygwin).
-                # This will cause problem when running applications that
-                # are very picky about window size.
-                # This is a serious limitation, but not a show stopper.
-                pass
-            # Do not allow child to inherit open file descriptors from parent.
-            max_fd = resource.getrlimit(resource.RLIMIT_NOFILE)[0]
-            for i in range (3, max_fd):
-                try:
-                    os.close (i)
-                except OSError:
-                    pass
-
-            # I don't know why this works, but ignoring SIGHUP fixes a
-            # problem when trying to start a Java daemon with sudo
-            # (specifically, Tomcat).
-            signal.signal(signal.SIGHUP, signal.SIG_IGN)
-
-            if self.cwd is not None:
-                os.chdir(self.cwd)
-            if self.env is None:
-                os.execv(self.command, self.args)
-            else:
-                os.execvpe(self.command, self.args, self.env)
-                
-            if self.cwd is not None:
-                # Restore the original working dir
-                os.chdir(self.ocwd)
-
-        # Parent
-        self.terminated = False
-        self.closed = False
-
-    def __fork_pty(self): # pragma: no cover
-        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::__fork_pty"), DeprecationWarning)
-        
-
-        """This implements a substitute for the forkpty system call. This
-        should be more portable than the pty.fork() function. Specifically,
-        this should work on Solaris.
-
-        Modified 10.06.05 by Geoff Marshall: Implemented __fork_pty() method to
-        resolve the issue with Python's pty.fork() not supporting Solaris,
-        particularly ssh. Based on patch to posixmodule.c authored by Noah
-        Spurrier::
-
-            http://mail.python.org/pipermail/python-dev/2003-May/035281.html
-
-        """
-
-        parent_fd, child_fd = os.openpty()
-        if parent_fd < 0 or child_fd < 0:
-            raise ExceptionPexpect("Error! Could not open pty with os.openpty().")
-
-        pid = os.fork()
-        if pid < 0:
-            raise ExceptionPexpect("Error! Failed os.fork().")
-        elif pid == 0:
-            # Child.
-            os.close(parent_fd)
-            self.__pty_make_controlling_tty(child_fd)
-
-            os.dup2(child_fd, 0)
-            os.dup2(child_fd, 1)
-            os.dup2(child_fd, 2)
-
-            if child_fd > 2:
-                os.close(child_fd)
-        else:
-            # Parent.
-            os.close(child_fd)
-
-        return pid, parent_fd
-
-    def __pty_make_controlling_tty(self, tty_fd): # pragma: no cover
-        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::__pty_make_controlling_tty"), DeprecationWarning)
-
-        """This makes the pseudo-terminal the controlling tty. This should be
-        more portable than the pty.fork() function. Specifically, this should
-        work on Solaris. """
-
-        child_name = os.ttyname(tty_fd)
-
-        # Disconnect from controlling tty if still connected.
-        fd = os.open("/dev/tty", os.O_RDWR | os.O_NOCTTY);
-        if fd >= 0:
-            os.close(fd)
-
-        os.setsid()
-
-        # Verify we are disconnected from controlling tty
-        try:
-            fd = os.open("/dev/tty", os.O_RDWR | os.O_NOCTTY);
-            if fd >= 0:
-                os.close(fd)
-                raise ExceptionPexpect("Error! We are not disconnected from a controlling tty.")
-        except:
-            # Good! We are disconnected from a controlling tty.
-            pass
-
-        # Verify we can open child pty.
-        fd = os.open(child_name, os.O_RDWR);
-        if fd < 0:
-            raise ExceptionPexpect("Error! Could not open child pty, " + child_name)
-        else:
-            os.close(fd)
-
-        # Verify we now have a controlling tty.
-        fd = os.open("/dev/tty", os.O_WRONLY)
-        if fd < 0:
-            raise ExceptionPexpect("Error! Could not open controlling tty, /dev/tty")
-        else:
-            os.close(fd)
-
     def fileno (self):   # File-like object.
 
         """This returns the file descriptor of the pty for the child.
@@ -738,14 +568,6 @@ class spawn_unix (object):
             self.child_fd = -1
             self.closed = True
             #self.pid = None
-
-    def flush (self):   # pragma: no cover # File-like object.
-
-        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::flush"), DeprecationWarning)
-        """This does nothing. It is here to support the interface for a
-        File-like object. """
-
-        pass
 
     def isatty (self):   # File-like object.
 
@@ -837,85 +659,6 @@ class spawn_unix (object):
         # I tried TCSADRAIN and TCSAFLUSH, but these were inconsistent
         # and blocked on some platforms. TCSADRAIN is probably ideal if it worked.
         termios.tcsetattr(self.child_fd, termios.TCSANOW, attr)
-
-    def read_nonblocking (self, size = 1, timeout = -1): # pragma: no cover
-        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::read_nonblocking"), DeprecationWarning)
-
-        """This reads at most size characters from the child application. It
-        includes a timeout. If the read does not complete within the timeout
-        period then a TIMEOUT exception is raised. If the end of file is read
-        then an EOF exception will be raised. If a log file was set using
-        setlog() then all data will also be written to the log file.
-
-        If timeout is None then the read may block indefinitely. If timeout is -1
-        then the self.timeout value is used. If timeout is 0 then the child is
-        polled and if there was no data immediately ready then this will raise
-        a TIMEOUT exception.
-
-        The timeout refers only to the amount of time to read at least one
-        character. This is not effected by the 'size' parameter, so if you call
-        read_nonblocking(size=100, timeout=30) and only one character is
-        available right away then one character will be returned immediately.
-        It will not wait for 30 seconds for another 99 characters to come in.
-
-        This is a wrapper around os.read(). It uses select.select() to
-        implement the timeout. """
-
-        if self.closed:
-            raise ValueError ('I/O operation on closed file in read_nonblocking().')
-
-        if timeout == -1:
-            timeout = self.timeout
-
-        # Note that some systems such as Solaris do not give an EOF when
-        # the child dies. In fact, you can still try to read
-        # from the child_fd -- it will block forever or until TIMEOUT.
-        # For this case, I test isalive() before doing any reading.
-        # If isalive() is false, then I pretend that this is the same as EOF.
-        if not self.isalive():
-            r,w,e = self.__select([self.child_fd], [], [], 0) # timeout of 0 means "poll"
-            if not r:
-                self.flag_eof = True
-                raise EOF ('End Of File (EOF) in read_nonblocking(). Braindead platform.')
-        elif self.__irix_hack:
-            # This is a hack for Irix. It seems that Irix requires a long delay before checking isalive.
-            # This adds a 2 second delay, but only when the child is terminated.
-            r, w, e = self.__select([self.child_fd], [], [], 2)
-            if not r and not self.isalive():
-                self.flag_eof = True
-                raise EOF ('End Of File (EOF) in read_nonblocking(). Pokey platform.')
-
-        r,w,e = self.__select([self.child_fd], [], [], timeout)
-
-        if not r:
-            if not self.isalive():
-                # Some platforms, such as Irix, will claim that their processes are alive;
-                # then timeout on the select; and then finally admit that they are not alive.
-                self.flag_eof = True
-                raise EOF ('End of File (EOF) in read_nonblocking(). Very pokey platform.')
-            else:
-                raise TIMEOUT ('Timeout exceeded in read_nonblocking().')
-
-        if self.child_fd in r:
-            try:
-                s = os.read(self.child_fd, size)
-            except OSError as e: # Linux does this
-                self.flag_eof = True
-                raise EOF ('End Of File (EOF) in read_nonblocking(). Exception style platform.')
-            if s == '': # BSD style
-                self.flag_eof = True
-                raise EOF ('End Of File (EOF) in read_nonblocking(). Empty string style platform.')
-
-            if self.logfile is not None:
-                self.logfile.write (s)
-                self.logfile.flush()
-            if self.logfile_read is not None:
-                self.logfile_read.write (s)
-                self.logfile_read.flush()
-
-            return s
-
-        raise ExceptionPexpect ('Reached an unexpected state in read_nonblocking().')
 
     def read (self, size = -1):   # File-like object.
 
@@ -1009,24 +752,6 @@ class spawn_unix (object):
 
         for s in sequence:
             self.write (s)
-
-    def send(self, s): # pragma: no cover
-        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::send"), DeprecationWarning)
-
-
-        """This sends a string to the child process. This returns the number of
-        bytes written. If a log file was set then the data is also written to
-        the log. """
-
-        time.sleep(self.delaybeforesend)
-        if self.logfile is not None:
-            self.logfile.write (s)
-            self.logfile.flush()
-        if self.logfile_send is not None:
-            self.logfile_send.write (s)
-            self.logfile_send.flush()
-        c = os.write(self.child_fd, s)
-        return c
 
     def sendline(self, s=''):
 
@@ -1183,70 +908,6 @@ class spawn_unix (object):
         elif os.WIFSTOPPED (status):
             raise ExceptionPexpect ('Wait was called for a child process that is stopped. This is not supported. Is some other process attempting job control with our child pid?')
         return self.exitstatus
-
-    def isalive(self): # pragma: no cover
-        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::isalive"), DeprecationWarning)
-
-        """This tests if the child process is running or not. This is
-        non-blocking. If the child was terminated then this will read the
-        exitstatus or signalstatus of the child. This returns True if the child
-        process appears to be running or False if not. It can take literally
-        SECONDS for Solaris to return the right status. """
-
-        if self.terminated:
-            return False
-
-        if self.flag_eof:
-            # This is for Linux, which requires the blocking form of waitpid to get
-            # status of a defunct process. This is super-lame. The flag_eof would have
-            # been set in read_nonblocking(), so this should be safe.
-            waitpid_options = 0
-        else:
-            waitpid_options = os.WNOHANG
-
-        try:
-            pid, status = os.waitpid(self.pid, waitpid_options)
-        except OSError as e: # No child processes
-            if e[0] == errno.ECHILD:
-                raise ExceptionPexpect ('isalive() encountered condition where "terminated" is 0, but there was no child process. Did someone else call waitpid() on our process?')
-            else:
-                raise e
-
-        # I have to do this twice for Solaris. I can't even believe that I figured this out...
-        # If waitpid() returns 0 it means that no child process wishes to
-        # report, and the value of status is undefined.
-        if pid == 0:
-            try:
-                pid, status = os.waitpid(self.pid, waitpid_options) ### os.WNOHANG) # Solaris!
-            except OSError as e: # This should never happen...
-                if e[0] == errno.ECHILD:
-                    raise ExceptionPexpect ('isalive() encountered condition that should never happen. There was no child process. Did someone else call waitpid() on our process?')
-                else:
-                    raise e
-
-            # If pid is still 0 after two calls to waitpid() then
-            # the process really is alive. This seems to work on all platforms, except
-            # for Irix which seems to require a blocking call on waitpid or select, so I let read_nonblocking
-            # take care of this situation (unfortunately, this requires waiting through the timeout).
-            if pid == 0:
-                return True
-
-        if pid == 0:
-            return True
-
-        if os.WIFEXITED (status):
-            self.status = status
-            self.exitstatus = os.WEXITSTATUS(status)
-            self.signalstatus = None
-            self.terminated = True
-        elif os.WIFSIGNALED (status):
-            self.status = status
-            self.exitstatus = None
-            self.signalstatus = os.WTERMSIG(status)
-            self.terminated = True
-        elif os.WIFSTOPPED (status):
-            raise ExceptionPexpect ('isalive() encountered condition where child process is stopped. This is not supported. Is some other process attempting job control with our child pid?')
-        return False
 
     def kill(self, sig):
 
@@ -1522,52 +1183,6 @@ class spawn_unix (object):
         # Note, assume ws_xpixel and ws_ypixel are zero.
         s = struct.pack('HHHH', r, c, 0, 0)
         fcntl.ioctl(self.fileno(), TIOCSWINSZ, s)
-
-    def interact(self, escape_character = chr(29), input_filter = None, output_filter = None): # pragma: no cover
-        warnings.warn(no_unix_deprecation_warning.format("spawn_unix::interact"), DeprecationWarning)
-
-        """This gives control of the child process to the interactive user (the
-        human at the keyboard). Keystrokes are sent to the child process, and
-        the stdout and stderr output of the child process is printed. This
-        simply echos the child stdout and child stderr to the real stdout and
-        it echos the real stdin to the child stdin. When the user types the
-        escape_character this method will stop. The default for
-        escape_character is ^]. This should not be confused with ASCII 27 --
-        the ESC character. ASCII 29 was chosen for historical merit because
-        this is the character used by 'telnet' as the escape character. The
-        escape_character will not be sent to the child process.
-
-        You may pass in optional input and output filter functions. These
-        functions should take a string and return a string. The output_filter
-        will be passed all the output from the child process. The input_filter
-        will be passed all the keyboard input from the user. The input_filter
-        is run BEFORE the check for the escape_character.
-
-        Note that if you change the window size of the parent the SIGWINCH
-        signal will not be passed through to the child. If you want the child
-        window size to change when the parent's window size changes then do
-        something like the following example::
-
-            def sigwinch_passthrough (sig, data):
-                s = struct.pack("HHHH", 0, 0, 0, 0)
-                a = struct.unpack('hhhh', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ , s))
-                global p
-                p.setwinsize(a[0],a[1])
-            p = pexpect.spawn('/bin/bash') # Note this is global and used in sigwinch_passthrough.
-            signal.signal(signal.SIGWINCH, sigwinch_passthrough)
-            p.interact()
-        """
-
-        # Flush the buffer.
-        self.stdout.write (self.buffer)
-        self.stdout.flush()
-        self.buffer = ''
-        mode = tty.tcgetattr(self.STDIN_FILENO)
-        tty.setraw(self.STDIN_FILENO)
-        try:
-            self.__interact_copy(escape_character, input_filter, output_filter)
-        finally:
-            tty.tcsetattr(self.STDIN_FILENO, tty.TCSAFLUSH, mode)
 
     def __interact_writen(self, fd, data):
 
