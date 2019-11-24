@@ -315,12 +315,9 @@ def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, log
             log('\t%s=%s' % (name, env[name]))
     if cwd:
         log('Working directory: %s' % cwd)
-    if sys.platform == 'win32':
-        return spawn_windows(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env,
-                             codepage)
-    else:
-        return spawn_unix(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env)
         
+    return spawn_windows(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env,
+                             codepage)        
 
 class spawn_windows ():
     """This is the main class interface for Pexpect. Use this class to start
@@ -438,10 +435,6 @@ class spawn_windows ():
 
         self.codepage = codepage
         
-        if sys.platform != 'win32':
-            self.STDIN_FILENO = pty.STDIN_FILENO
-            self.STDOUT_FILENO = pty.STDOUT_FILENO
-            self.STDERR_FILENO = pty.STDERR_FILENO
         self.stdin = sys.stdin
         self.stdout = sys.stdout
         self.stderr = sys.stderr
@@ -478,14 +471,7 @@ class spawn_windows ():
         self.ocwd = os.getcwd()
         self.cwd = cwd
         self.env = env
-        self.__irix_hack = (sys.platform.lower().find('irix')>=0) # This flags if we are running on irix
-        # Solaris uses internal __fork_pty(). All others use pty.fork().
-        if (sys.platform.lower().find('solaris')>=0) or (sys.platform.lower().find('sunos5')>=0):
-            self.use_native_pty_fork = False
-        else:
-            self.use_native_pty_fork = True
-
-
+        
         # allow dummy instances for subclasses that may not use command or args.
         if command is None:
             self.command = None
@@ -493,10 +479,6 @@ class spawn_windows ():
             self.name = '<pexpect factory incomplete>'
         else:
             self._spawn (command, args)
-
-        #__irix_hack set by super, windows doesn't need it.
-        self.__irix_hack = None
-
 
     def __del__(self):
         """This makes sure that no system resources are left open. Python only
