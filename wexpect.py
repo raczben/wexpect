@@ -112,7 +112,7 @@ screenbufferfillchar = '\4'
 maxconsoleY = 8000
 
 warnings.simplefilter("always", category=DeprecationWarning)
-no_unix_deprecation_warning = '''
+deprecation_warning = '''
 ################################## WARNING ##################################
 {} is deprecated, and will be removed soon.
 Please contact me and report it at github.com/raczben/wexpect if you use it.
@@ -164,7 +164,8 @@ class ExceptionPexpect(Exception):
 
         return str(self.value)
 
-    def get_trace(self):
+    def get_trace(self): # pragma: no cover
+        warnings.warn(deprecation_warning.format("ExceptionPexpect::get_trace"), DeprecationWarning)
 
         """This returns an abbreviated stack trace with lines that only concern
         the caller. In other words, the stack trace inside the Pexpect module
@@ -176,7 +177,8 @@ class ExceptionPexpect(Exception):
         tblist = traceback.format_list(tblist)
         return ''.join(tblist)
 
-    def __filter_not_pexpect(self, trace_list_item):
+    def __filter_not_pexpect(self, trace_list_item): # pragma: no cover
+        warnings.warn(deprecation_warning.format("ExceptionPexpect::__filter_not_pexpect"), DeprecationWarning)
 
         """This returns True if list item 0 the string 'pexpect.py' in it. """
 
