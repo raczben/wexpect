@@ -829,27 +829,8 @@ class spawn_windows ():
         It is the responsibility of the caller to ensure the eof is sent at the
         beginning of a line. """
 
-        ### Hmmm... how do I send an EOF?
-        ###C  if ((m = write(pty, *buf, p - *buf)) < 0)
-        ###C      return (errno == EWOULDBLOCK) ? n : -1;
-        #fd = sys.stdin.fileno()
-        #old = termios.tcgetattr(fd) # remember current state
-        #attr = termios.tcgetattr(fd)
-        #attr[3] = attr[3] | termios.ICANON # ICANON must be set to recognize EOF
-        #try: # use try/finally to ensure state gets restored
-        #    termios.tcsetattr(fd, termios.TCSADRAIN, attr)
-        #    if hasattr(termios, 'CEOF'):
-        #        os.write (self.child_fd, '%c' % termios.CEOF)
-        #    else:
-        #        # Silly platform does not define CEOF so assume CTRL-D
-        #        os.write (self.child_fd, '%c' % 4)
-        #finally: # restore state
-        #    termios.tcsetattr(fd, termios.TCSADRAIN, old)
-        if hasattr(termios, 'VEOF'):
-            char = termios.tcgetattr(self.child_fd)[6][termios.VEOF]
-        else:
-            # platform does not define VEOF so assume CTRL-D
-            char = chr(4)
+        # platform does not define VEOF so assume CTRL-D
+        char = chr(4)
         self.send(char)
 
     def send(self, s):
