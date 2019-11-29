@@ -298,113 +298,113 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
 
 def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, logfile=None, cwd=None, env=None,
           codepage=None):
-        """This is the most essential function. The command parameter may be a string that
-        includes a command and any arguments to the command. For example::
+    """This is the most essential function. The command parameter may be a string that
+    includes a command and any arguments to the command. For example::
 
-            child = wexpect.spawn ('/usr/bin/ftp')
-            child = wexpect.spawn ('/usr/bin/ssh user@example.com')
-            child = wexpect.spawn ('ls -latr /tmp')
+        child = wexpect.spawn ('/usr/bin/ftp')
+        child = wexpect.spawn ('/usr/bin/ssh user@example.com')
+        child = wexpect.spawn ('ls -latr /tmp')
 
-        You may also construct it with a list of arguments like so::
+    You may also construct it with a list of arguments like so::
 
-            child = wexpect.spawn ('/usr/bin/ftp', [])
-            child = wexpect.spawn ('/usr/bin/ssh', ['user@example.com'])
-            child = wexpect.spawn ('ls', ['-latr', '/tmp'])
+        child = wexpect.spawn ('/usr/bin/ftp', [])
+        child = wexpect.spawn ('/usr/bin/ssh', ['user@example.com'])
+        child = wexpect.spawn ('ls', ['-latr', '/tmp'])
 
-        After this the child application will be created and will be ready to
-        talk to. For normal use, see expect() and send() and sendline().
+    After this the child application will be created and will be ready to
+    talk to. For normal use, see expect() and send() and sendline().
 
-        Remember that Wexpect does NOT interpret shell meta characters such as
-        redirect, pipe, or wild cards (>, |, or *). This is a common mistake.
-        If you want to run a command and pipe it through another command then
-        you must also start a shell. For example::
+    Remember that Wexpect does NOT interpret shell meta characters such as
+    redirect, pipe, or wild cards (>, |, or *). This is a common mistake.
+    If you want to run a command and pipe it through another command then
+    you must also start a shell. For example::
 
-            child = wexpect.spawn('/bin/bash -c "ls -l | grep LOG > log_list.txt"')
-            child.expect(wexpect.EOF)
+        child = wexpect.spawn('/bin/bash -c "ls -l | grep LOG > log_list.txt"')
+        child.expect(wexpect.EOF)
 
-        The second form of spawn (where you pass a list of arguments) is useful
-        in situations where you wish to spawn a command and pass it its own
-        argument list. This can make syntax more clear. For example, the
-        following is equivalent to the previous example::
+    The second form of spawn (where you pass a list of arguments) is useful
+    in situations where you wish to spawn a command and pass it its own
+    argument list. This can make syntax more clear. For example, the
+    following is equivalent to the previous example::
 
-            shell_cmd = 'ls -l | grep LOG > log_list.txt'
-            child = wexpect.spawn('/bin/bash', ['-c', shell_cmd])
-            child.expect(wexpect.EOF)
+        shell_cmd = 'ls -l | grep LOG > log_list.txt'
+        child = wexpect.spawn('/bin/bash', ['-c', shell_cmd])
+        child.expect(wexpect.EOF)
 
-        The maxread attribute sets the read buffer size. This is maximum number
-        of bytes that Wexpect will try to read from a TTY at one time. Setting
-        the maxread size to 1 will turn off buffering. Setting the maxread
-        value higher may help performance in cases where large amounts of
-        output are read back from the child. This feature is useful in
-        conjunction with searchwindowsize.
+    The maxread attribute sets the read buffer size. This is maximum number
+    of bytes that Wexpect will try to read from a TTY at one time. Setting
+    the maxread size to 1 will turn off buffering. Setting the maxread
+    value higher may help performance in cases where large amounts of
+    output are read back from the child. This feature is useful in
+    conjunction with searchwindowsize.
 
-        The searchwindowsize attribute sets the how far back in the incomming
-        seach buffer Wexpect will search for pattern matches. Every time
-        Wexpect reads some data from the child it will append the data to the
-        incomming buffer. The default is to search from the beginning of the
-        imcomming buffer each time new data is read from the child. But this is
-        very inefficient if you are running a command that generates a large
-        amount of data where you want to match The searchwindowsize does not
-        effect the size of the incomming data buffer. You will still have
-        access to the full buffer after expect() returns.
+    The searchwindowsize attribute sets the how far back in the incomming
+    seach buffer Wexpect will search for pattern matches. Every time
+    Wexpect reads some data from the child it will append the data to the
+    incomming buffer. The default is to search from the beginning of the
+    imcomming buffer each time new data is read from the child. But this is
+    very inefficient if you are running a command that generates a large
+    amount of data where you want to match The searchwindowsize does not
+    effect the size of the incomming data buffer. You will still have
+    access to the full buffer after expect() returns.
 
-        The logfile member turns on or off logging. All input and output will
-        be copied to the given file object. Set logfile to None to stop
-        logging. This is the default. Set logfile to sys.stdout to echo
-        everything to standard output. The logfile is flushed after each write.
+    The logfile member turns on or off logging. All input and output will
+    be copied to the given file object. Set logfile to None to stop
+    logging. This is the default. Set logfile to sys.stdout to echo
+    everything to standard output. The logfile is flushed after each write.
 
-        Example log input and output to a file::
+    Example log input and output to a file::
 
-            child = wexpect.spawn('some_command')
-            fout = file('mylog.txt','w')
-            child.logfile = fout
+        child = wexpect.spawn('some_command')
+        fout = file('mylog.txt','w')
+        child.logfile = fout
 
-        Example log to stdout::
+    Example log to stdout::
 
-            child = wexpect.spawn('some_command')
-            child.logfile = sys.stdout
+        child = wexpect.spawn('some_command')
+        child.logfile = sys.stdout
 
-        The logfile_read and logfile_send members can be used to separately log
-        the input from the child and output sent to the child. Sometimes you
-        don't want to see everything you write to the child. You only want to
-        log what the child sends back. For example::
-        
-            child = wexpect.spawn('some_command')
-            child.logfile_read = sys.stdout
+    The logfile_read and logfile_send members can be used to separately log
+    the input from the child and output sent to the child. Sometimes you
+    don't want to see everything you write to the child. You only want to
+    log what the child sends back. For example::
+    
+        child = wexpect.spawn('some_command')
+        child.logfile_read = sys.stdout
 
-        To separately log output sent to the child use logfile_send::
-        
-            self.logfile_send = fout
+    To separately log output sent to the child use logfile_send::
+    
+        self.logfile_send = fout
 
-        The delaybeforesend helps overcome a weird behavior that many users
-        were experiencing. The typical problem was that a user would expect() a
-        "Password:" prompt and then immediately call sendline() to send the
-        password. The user would then see that their password was echoed back
-        to them. Passwords don't normally echo. The problem is caused by the
-        fact that most applications print out the "Password" prompt and then
-        turn off stdin echo, but if you send your password before the
-        application turned off echo, then you get your password echoed.
-        Normally this wouldn't be a problem when interacting with a human at a
-        real keyboard. If you introduce a slight delay just before writing then
-        this seems to clear up the problem. This was such a common problem for
-        many users that I decided that the default wexpect behavior should be
-        to sleep just before writing to the child application. 1/20th of a
-        second (50 ms) seems to be enough to clear up the problem. You can set
-        delaybeforesend to 0 to return to the old behavior. Most Linux machines
-        don't like this to be below 0.03. I don't know why.
+    The delaybeforesend helps overcome a weird behavior that many users
+    were experiencing. The typical problem was that a user would expect() a
+    "Password:" prompt and then immediately call sendline() to send the
+    password. The user would then see that their password was echoed back
+    to them. Passwords don't normally echo. The problem is caused by the
+    fact that most applications print out the "Password" prompt and then
+    turn off stdin echo, but if you send your password before the
+    application turned off echo, then you get your password echoed.
+    Normally this wouldn't be a problem when interacting with a human at a
+    real keyboard. If you introduce a slight delay just before writing then
+    this seems to clear up the problem. This was such a common problem for
+    many users that I decided that the default wexpect behavior should be
+    to sleep just before writing to the child application. 1/20th of a
+    second (50 ms) seems to be enough to clear up the problem. You can set
+    delaybeforesend to 0 to return to the old behavior. Most Linux machines
+    don't like this to be below 0.03. I don't know why.
 
-        Note that spawn is clever about finding commands on your path.
-        It uses the same logic that "which" uses to find executables.
+    Note that spawn is clever about finding commands on your path.
+    It uses the same logic that "which" uses to find executables.
 
-        If you wish to get the exit status of the child you must call the
-        close() method. The exit or signal status of the child will be stored
-        in self.exitstatus or self.signalstatus. If the child exited normally
-        then exitstatus will store the exit return code and signalstatus will
-        be None. If the child was terminated abnormally with a signal then
-        signalstatus will store the signal value and exitstatus will be None.
-        If you need more detail you can also read the self.status member which
-        stores the status returned by os.waitpid. You can interpret this using
-        os.WIFEXITED/os.WEXITSTATUS or os.WIFSIGNALED/os.TERMSIG. """
+    If you wish to get the exit status of the child you must call the
+    close() method. The exit or signal status of the child will be stored
+    in self.exitstatus or self.signalstatus. If the child exited normally
+    then exitstatus will store the exit return code and signalstatus will
+    be None. If the child was terminated abnormally with a signal then
+    signalstatus will store the signal value and exitstatus will be None.
+    If you need more detail you can also read the self.status member which
+    stores the status returned by os.waitpid. You can interpret this using
+    os.WIFEXITED/os.WEXITSTATUS or os.WIFSIGNALED/os.TERMSIG. """
 
     log('=' * 80)
     log('Buffer size: %s' % maxread)
