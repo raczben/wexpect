@@ -598,7 +598,15 @@ class spawn_windows ():
         
         return True
 
-    def waitnoecho (self, timeout=-1):
+    def waitnoecho (self, timeout=-1): # pragma: no cover
+        faulty_method_warning = '''
+        ################################## WARNING ##################################
+        waitnoecho() is faulty!
+        Please contact me and report it at
+        https://github.com/raczben/wexpect/issues/18 if you use it.
+        ################################## WARNING ##################################
+        '''
+        warnings.warn(faulty_method_warning, DeprecationWarning)
 
         """This waits until the terminal ECHO flag is set False. This returns
         True if the echo mode is off. This returns False if the ECHO flag was
@@ -1188,74 +1196,6 @@ class spawn_windows ():
         """Hides the child console from the user."""
     
         self.wtty.stop_interact()
-        
-    def __interact_writen(self, fd, data):
-
-        """This is used by the interact() method.
-        """
-
-        while data != '' and self.isalive():
-            n = os.write(fd, data)
-            data = data[n:]
-
-    def __interact_read(self, fd):
-
-        """This is used by the interact() method.
-        """
-
-        return os.read(fd, 1000)
-
-    def __interact_copy(self, escape_character = None, input_filter = None, output_filter = None):
-
-        """This is used by the interact() method.
-        """
-
-        while self.isalive():
-            r,w,e = self.__select([self.child_fd, self.STDIN_FILENO], [], [])
-            if self.child_fd in r:
-                try:
-                    data = self.__interact_read(self.child_fd)
-                except OSError as e:
-                    break
-                if output_filter: data = output_filter(data)
-                if self.logfile is not None:
-                    self.logfile.write (data)
-                    self.logfile.flush()
-                os.write(self.STDOUT_FILENO, data)
-            if self.STDIN_FILENO in r:
-                data = self.__interact_read(self.STDIN_FILENO)
-                if input_filter: data = input_filter(data)
-                i = data.rfind(escape_character)
-                if i != -1:
-                    data = data[:i]
-                    self.__interact_writen(self.child_fd, data)
-                    break
-                self.__interact_writen(self.child_fd, data)
-
-    def __select (self, iwtd, owtd, ewtd, timeout=None):
-
-        """This is a wrapper around select.select() that ignores signals. If
-        select.select raises a select.error exception and errno is an EINTR
-        error then it is ignored. Mainly this is used to ignore sigwinch
-        (terminal resize). """
-
-        # if select() is interrupted by a signal (errno==EINTR) then
-        # we loop back and enter the select() again.
-        if timeout is not None:
-            end_time = time.time() + timeout
-        while True:
-            try:
-                return select.select (iwtd, owtd, ewtd, timeout)
-            except select.error as e:
-                if e[0] == errno.EINTR:
-                    # if we loop back we have to subtract the amount of time we already waited.
-                    if timeout is not None:
-                        timeout = end_time - time.time()
-                        if timeout < 0:
-                            return ([],[],[])
-                else: # something else caused the select.error, so this really is an exception
-                    raise
-
 
 ##############################################################################
 # End of spawn_windows class
