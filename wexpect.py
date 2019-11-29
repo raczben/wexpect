@@ -1,21 +1,21 @@
-"""Pexpect is a Python module for spawning child applications and controlling
-them automatically. Pexpect can be used for automating interactive applications
+"""Wexpect is a Windows variant of pexpect https://pexpect.readthedocs.io.
+
+Wexpect is a Python module for spawning child applications and controlling
+them automatically. Wexpect can be used for automating interactive applications
 such as ssh, ftp, passwd, telnet, etc. It can be used to a automate setup
 scripts for duplicating software package installations on different servers. It
-can be used for automated software testing. Pexpect is in the spirit of Don
-Libes' Expect, but Pexpect is pure Python. Other Expect-like modules for Python
-require TCL and Expect or require C extensions to be compiled. Pexpect does not
-use C, Expect, or TCL extensions. It should work on any platform that supports
-the standard Python pty module. The Pexpect interface focuses on ease of use so
-that simple tasks are easy.
+can be used for automated software testing. Wexpect is in the spirit of Don
+Libes' Expect, but Wexpect is pure Python. Other Expect-like modules for Python
+require TCL and Expect or require C extensions to be compiled. Wexpect does not
+use C, Expect, or TCL extensions. 
 
-There are two main interfaces to Pexpect -- the function, run() and the class,
+There are two main interfaces to Wexpect -- the function, run() and the class,
 spawn. You can call the run() function to execute a command and return the
 output. This is a handy replacement for os.system().
 
 For example::
 
-    pexpect.run('ls -la')
+    wexpect.run('ls -la')
 
 The more powerful interface is the spawn class. You can use this to spawn an
 external child command and then interact with the child by sending lines and
@@ -23,9 +23,9 @@ expecting responses.
 
 For example::
 
-    child = pexpect.spawn('scp foo myname@host.example.com:.')
-    child.expect ('Password:')
-    child.sendline (mypassword)
+    child = wexpect.spawn('scp foo myname@host.example.com:.')
+    child.expect('Password:')
+    child.sendline(mypassword)
 
 This works even for commands that ask for passwords or other input outside of
 the normal stdio streams.
@@ -35,7 +35,7 @@ Robert Stone, Hartmut Goebel, Chad Schroeder, Erick Tryzelaar, Dave Kirby, Ids
 vander Molen, George Todd, Noel Taylor, Nicolas D. Cesar, Alexander Gattin,
 Geoffrey Marshall, Francisco Lourenco, Glen Mabey, Karthik Gurusamy, Fernando
 Perez, Corey Minyard, Jon Cohen, Guillaume Chazarain, Andrew Ryan, Nick
-Craig-Wood, Andrew Stone, Jorgen Grahn (Let me know if I forgot anyone.)
+Craig-Wood, Andrew Stone, Jorgen Grahn, Benedek Racz
 
 Free, open source, and all that good stuff.
 
@@ -57,10 +57,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Pexpect Copyright (c) 2008 Noah Spurrier
-http://pexpect.sourceforge.net/
+Wexpect Copyright (c) 2019 Benedek Racz
 
-$Id: pexpect.py 507 2007-12-27 02:40:52Z noah $
 """
 
 #
@@ -168,21 +166,20 @@ class ExceptionPexpect(Exception):
         warnings.warn(deprecation_warning.format("ExceptionPexpect::get_trace"), DeprecationWarning)
 
         """This returns an abbreviated stack trace with lines that only concern
-        the caller. In other words, the stack trace inside the Pexpect module
+        the caller. In other words, the stack trace inside the Wexpect module
         is not included. """
 
         tblist = traceback.extract_tb(sys.exc_info()[2])
-        #tblist = filter(self.__filter_not_pexpect, tblist)
-        tblist = [item for item in tblist if self.__filter_not_pexpect(item)]
+        tblist = [item for item in tblist if self.__filter_not_wexpect(item)]
         tblist = traceback.format_list(tblist)
         return ''.join(tblist)
 
-    def __filter_not_pexpect(self, trace_list_item): # pragma: no cover
-        warnings.warn(deprecation_warning.format("ExceptionPexpect::__filter_not_pexpect"), DeprecationWarning)
+    def __filter_not_wexpect(self, trace_list_item): # pragma: no cover
+        warnings.warn(deprecation_warning.format("ExceptionPexpect::__filter_not_wexpect"), DeprecationWarning)
 
-        """This returns True if list item 0 the string 'pexpect.py' in it. """
+        """This returns True if list item 0 the string 'wexpect.py' in it. """
 
-        if trace_list_item[0].find('pexpect.py') == -1:
+        if trace_list_item[0].find('wexpect.py') == -1:
             return True
         else:
             return False
@@ -240,9 +237,6 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
     password 'secret' will be sent if the '(?i)password' pattern is ever seen::
 
         run ("ssh username@machine.example.com 'ls -l'", events={'(?i)password':'secret\\n'})
-
-    This will start mencoder to rip a video from DVD. This will also display
-    progress ticks every 5 seconds as it runs. For example::
 
     The 'events' argument should be a dictionary of patterns and responses.
     Whenever one of the patterns is seen in the command out run() will send the
@@ -304,50 +298,29 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
 
 def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, logfile=None, cwd=None, env=None,
           codepage=None):
-    log('=' * 80)
-    log('Buffer size: %s' % maxread)
-    if searchwindowsize:
-        log('Search window size: %s' % searchwindowsize)
-    log('Timeout: %ss' % timeout)
-    if env:
-        log('Environment:')
-        for name in env:
-            log('\t%s=%s' % (name, env[name]))
-    if cwd:
-        log('Working directory: %s' % cwd)
-        
-    return spawn_windows(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env,
-                             codepage)        
-
-class spawn_windows ():
-    """This is the main class interface for Pexpect. Use this class to start
-    and control child applications. """
-
-    def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None, logfile=None, cwd=None, env=None,
-                 codepage=None):
-        """This is the constructor. The command parameter may be a string that
+        """This is the most essential function. The command parameter may be a string that
         includes a command and any arguments to the command. For example::
 
-            child = pexpect.spawn ('/usr/bin/ftp')
-            child = pexpect.spawn ('/usr/bin/ssh user@example.com')
-            child = pexpect.spawn ('ls -latr /tmp')
+            child = wexpect.spawn ('/usr/bin/ftp')
+            child = wexpect.spawn ('/usr/bin/ssh user@example.com')
+            child = wexpect.spawn ('ls -latr /tmp')
 
         You may also construct it with a list of arguments like so::
 
-            child = pexpect.spawn ('/usr/bin/ftp', [])
-            child = pexpect.spawn ('/usr/bin/ssh', ['user@example.com'])
-            child = pexpect.spawn ('ls', ['-latr', '/tmp'])
+            child = wexpect.spawn ('/usr/bin/ftp', [])
+            child = wexpect.spawn ('/usr/bin/ssh', ['user@example.com'])
+            child = wexpect.spawn ('ls', ['-latr', '/tmp'])
 
         After this the child application will be created and will be ready to
         talk to. For normal use, see expect() and send() and sendline().
 
-        Remember that Pexpect does NOT interpret shell meta characters such as
+        Remember that Wexpect does NOT interpret shell meta characters such as
         redirect, pipe, or wild cards (>, |, or *). This is a common mistake.
         If you want to run a command and pipe it through another command then
         you must also start a shell. For example::
 
-            child = pexpect.spawn('/bin/bash -c "ls -l | grep LOG > log_list.txt"')
-            child.expect(pexpect.EOF)
+            child = wexpect.spawn('/bin/bash -c "ls -l | grep LOG > log_list.txt"')
+            child.expect(wexpect.EOF)
 
         The second form of spawn (where you pass a list of arguments) is useful
         in situations where you wish to spawn a command and pass it its own
@@ -355,19 +328,19 @@ class spawn_windows ():
         following is equivalent to the previous example::
 
             shell_cmd = 'ls -l | grep LOG > log_list.txt'
-            child = pexpect.spawn('/bin/bash', ['-c', shell_cmd])
-            child.expect(pexpect.EOF)
+            child = wexpect.spawn('/bin/bash', ['-c', shell_cmd])
+            child.expect(wexpect.EOF)
 
         The maxread attribute sets the read buffer size. This is maximum number
-        of bytes that Pexpect will try to read from a TTY at one time. Setting
+        of bytes that Wexpect will try to read from a TTY at one time. Setting
         the maxread size to 1 will turn off buffering. Setting the maxread
         value higher may help performance in cases where large amounts of
         output are read back from the child. This feature is useful in
         conjunction with searchwindowsize.
 
         The searchwindowsize attribute sets the how far back in the incomming
-        seach buffer Pexpect will search for pattern matches. Every time
-        Pexpect reads some data from the child it will append the data to the
+        seach buffer Wexpect will search for pattern matches. Every time
+        Wexpect reads some data from the child it will append the data to the
         incomming buffer. The default is to search from the beginning of the
         imcomming buffer each time new data is read from the child. But this is
         very inefficient if you are running a command that generates a large
@@ -382,13 +355,13 @@ class spawn_windows ():
 
         Example log input and output to a file::
 
-            child = pexpect.spawn('some_command')
+            child = wexpect.spawn('some_command')
             fout = file('mylog.txt','w')
             child.logfile = fout
 
         Example log to stdout::
 
-            child = pexpect.spawn('some_command')
+            child = wexpect.spawn('some_command')
             child.logfile = sys.stdout
 
         The logfile_read and logfile_send members can be used to separately log
@@ -396,7 +369,7 @@ class spawn_windows ():
         don't want to see everything you write to the child. You only want to
         log what the child sends back. For example::
         
-            child = pexpect.spawn('some_command')
+            child = wexpect.spawn('some_command')
             child.logfile_read = sys.stdout
 
         To separately log output sent to the child use logfile_send::
@@ -414,7 +387,7 @@ class spawn_windows ():
         Normally this wouldn't be a problem when interacting with a human at a
         real keyboard. If you introduce a slight delay just before writing then
         this seems to clear up the problem. This was such a common problem for
-        many users that I decided that the default pexpect behavior should be
+        many users that I decided that the default wexpect behavior should be
         to sleep just before writing to the child application. 1/20th of a
         second (50 ms) seems to be enough to clear up the problem. You can set
         delaybeforesend to 0 to return to the old behavior. Most Linux machines
@@ -433,6 +406,29 @@ class spawn_windows ():
         stores the status returned by os.waitpid. You can interpret this using
         os.WIFEXITED/os.WEXITSTATUS or os.WIFSIGNALED/os.TERMSIG. """
 
+    log('=' * 80)
+    log('Buffer size: %s' % maxread)
+    if searchwindowsize:
+        log('Search window size: %s' % searchwindowsize)
+    log('Timeout: %ss' % timeout)
+    if env:
+        log('Environment:')
+        for name in env:
+            log('\t%s=%s' % (name, env[name]))
+    if cwd:
+        log('Working directory: %s' % cwd)
+        
+    return spawn_windows(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env,
+                             codepage)        
+
+class spawn_windows ():
+    """This is the main class interface for Wexpect. Use this class to start
+    and control child applications. """
+
+    def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None, logfile=None, cwd=None, env=None,
+                 codepage=None):
+        """ The spawn_windows constructor. Do not call it directly. Use spawn(), or run() instead.
+        """
         self.codepage = codepage
         
         self.stdin = sys.stdin
@@ -460,7 +456,6 @@ class spawn_windows ():
         self.maxread = maxread # max bytes to read at one time into buffer
         self.buffer = '' # This is the read buffer. See maxread.
         self.searchwindowsize = searchwindowsize # Anything before searchwindowsize point is preserved, but not searched.
-        # Most Linux machines don't like delaybeforesend to be below 0.03 (30 ms).
         self.delaybeforesend = 0.05 # Sets sleep time used just before sending data to child. Time in seconds.
         self.delayafterclose = 0.1 # Sets delay in close() method to allow kernel time to update process status. Time in seconds.
         self.delayafterterminate = 0.1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
@@ -476,7 +471,7 @@ class spawn_windows ():
         if command is None:
             self.command = None
             self.args = None
-            self.name = '<pexpect factory incomplete>'
+            self.name = '<wexpect factory incomplete>'
         else:
             self._spawn (command, args)
 
@@ -616,7 +611,7 @@ class spawn_windows ():
         example, instead of expecting the "password:" prompt you can wait for
         the child to set ECHO off::
 
-            p = pexpect.spawn ('ssh user@example.com')
+            p = wexpect.spawn ('ssh user@example.com')
             p.waitnoecho()
             p.sendline(mypassword)
 
@@ -1033,7 +1028,7 @@ class spawn_windows ():
         exception type. The attribute 'match' will be None. This allows you to
         write code like this::
 
-                index = p.expect (['good', 'bad', pexpect.EOF, pexpect.TIMEOUT])
+                index = p.expect (['good', 'bad', wexpect.EOF, wexpect.TIMEOUT])
                 if index == 0:
                     do_something()
                 elif index == 1:
@@ -1060,8 +1055,8 @@ class spawn_windows ():
         can also just expect the EOF if you are waiting for all output of a
         child to finish. For example::
 
-                p = pexpect.spawn('/bin/ls')
-                p.expect (pexpect.EOF)
+                p = wexpect.spawn('/bin/ls')
+                p.expect (wexpect.EOF)
                 print p.before
 
         If you are trying to optimize for speed then see expect_list().
