@@ -50,6 +50,8 @@ class InteractTestCase(PexpectTestCase.PexpectTestCase):
         # Send a command
         p.sendline('echo hello')
         p.expect(cmdPrompt)
+        
+        p.stop_interact()
             
         self.assertEqual('hello', p.before.splitlines()[1])
             

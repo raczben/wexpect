@@ -630,14 +630,31 @@ class spawn_windows ():
                 timeout = end_time - time.time()
             time.sleep(0.1)
 
-    def getecho (self):
+    def getecho (self): # pragma: no cover
+        faulty_method_warning = '''
+        ################################## WARNING ##################################
+        setecho() is faulty!
+        Please contact me and report it at
+        https://github.com/raczben/wexpect/issues/18 if you use it.
+        ################################## WARNING ##################################
+        '''
+        warnings.warn(faulty_method_warning, DeprecationWarning)
         """This returns the terminal echo mode. This returns True if echo is
         on or False if echo is off. Child applications that are expecting you
         to enter a password often set ECHO False. See waitnoecho()."""
 
         return self.wtty.getecho()
 
-    def setecho (self, state):
+    def setecho (self, state): # pragma: no cover
+        faulty_method_warning = '''
+        ################################## WARNING ##################################
+        setecho() is faulty!
+        Please contact me and report it at
+        https://github.com/raczben/wexpect/issues/18 if you use it.
+        ################################## WARNING ##################################
+        '''
+        warnings.warn(faulty_method_warning, DeprecationWarning)
+
         """This sets the terminal echo mode on or off."""
         
         self.wtty.setecho(state)
@@ -1684,7 +1701,16 @@ class Wtty:
         #log('refreshConsole: cursorPos %s' % cursorPos)
         
     
-    def setecho(self, state):
+    def setecho(self, state): # pragma: no cover
+        faulty_method_warning = '''
+        ################################## WARNING ##################################
+        setecho() is faulty!
+        Please contact me and report it at
+        https://github.com/raczben/wexpect/issues/18 if you use it.
+        ################################## WARNING ##################################
+        '''
+        warnings.warn(faulty_method_warning, DeprecationWarning)
+
         """Sets the echo mode of the child console."""
     
         self.switchTo()
@@ -1700,7 +1726,16 @@ class Wtty:
             raise
         self.switchBack()
         
-    def getecho(self):
+    def getecho(self): # pragma: no cover
+        faulty_method_warning = '''
+        ################################## WARNING ##################################
+        getecho() is faulty!
+        Please contact me and report it at
+        https://github.com/raczben/wexpect/issues/18 if you use it.
+        ################################## WARNING ##################################
+        '''
+        warnings.warn(faulty_method_warning, DeprecationWarning)
+
         """Returns the echo mode of the child console."""
         
         self.switchTo()
