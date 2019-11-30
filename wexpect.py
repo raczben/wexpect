@@ -1093,8 +1093,13 @@ class spawn_windows ():
         This method is also useful when you don't want to have to worry about
         escaping regular expression characters that you want to match."""
 
-        if type(pattern_list) in (str,) or pattern_list in (TIMEOUT, EOF):
+        if not isinstance(pattern_list, list): 
             pattern_list = [pattern_list]
+            
+        for p in pattern_list:
+            if type(p) not in (str,) and p not in (TIMEOUT, EOF):
+                raise TypeError ('Argument must be one of StringTypes, EOF, TIMEOUT, or a list of those type. %s' % str(type(p)))
+            
         return self.expect_loop(searcher_string(pattern_list), timeout, searchwindowsize)
 
     def expect_loop(self, searcher, timeout = -1, searchwindowsize = -1):
@@ -1127,7 +1132,7 @@ class spawn_windows ():
                     self.match_index = index
                     return self.match_index
                 # No match at this point
-                if timeout < 0 and timeout is not None:
+                if timeout is not None and timeout < 0:
                     raise TIMEOUT ('Timeout exceeded in expect_any().')
                 # Still have time left, so read more data
                 c = self.read_nonblocking(self.maxread, timeout)
