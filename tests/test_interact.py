@@ -33,7 +33,7 @@ import unittest
 from . import PexpectTestCase
 
 class InteractTestCase(PexpectTestCase.PexpectTestCase):
-    def testPath(self):
+    def test_interact(self):
         # Path of cmd executable:
         cmd_exe = 'cmd'
         cmdPrompt = '>'
@@ -54,6 +54,23 @@ class InteractTestCase(PexpectTestCase.PexpectTestCase):
         p.stop_interact()
             
         self.assertEqual('hello', p.before.splitlines()[1])
+        
+    def test_interact_dead(self):
+        # Path of cmd executable:
+        echo = 'echo hello'
+
+        # Start the child process
+        p = wexpect.spawn(echo)
+        
+        p.expect('hello')
+        time.sleep(0.5)
+        
+        
+        with self.assertRaises(wexpect.ExceptionPexpect):
+            p.interact()
+
+        with self.assertRaises(wexpect.ExceptionPexpect):
+            p.stop_interact()
             
 if __name__ == '__main__':
     unittest.main()

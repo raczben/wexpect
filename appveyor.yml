@@ -21,7 +21,8 @@ test_script:
 
 after_test:
   # Upload code coverage results.
-  - codecov
+  # https://github.com/codecov/codecov-python/issues/158#issuecomment-514282362
+  - codecov --required || (sleep 5 && codecov --required) || (sleep 5 && codecov --required) || (sleep 5 && codecov --required) || (sleep 5 && codecov --required)
   
   # fill .pypirc file.
   # pypi
