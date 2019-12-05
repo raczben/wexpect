@@ -1720,10 +1720,8 @@ class Wtty:
         self.switchTo()
         try:
             win32gui.ShowWindow(win32console.GetConsoleWindow(), win32con.SW_SHOW)
-        except:
+        finally:
             self.switchBack()
-            raise
-        self.switchBack()
         
     def stop_interact(self):
         """Hides the child console."""
@@ -1731,10 +1729,8 @@ class Wtty:
         self.switchTo()
         try:
             win32gui.ShowWindow(win32console.GetConsoleWindow(), win32con.SW_HIDE)
-        except:
+        finally:
             self.switchBack()
-            raise
-        self.switchBack()
     
     def isalive(self, console=False):
         """True if the child is still alive, false otherwise"""
