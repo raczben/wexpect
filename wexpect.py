@@ -162,9 +162,7 @@ class ExceptionPexpect(Exception):
 
         return str(self.value)
 
-    def get_trace(self): # pragma: no cover
-        warnings.warn(deprecation_warning.format("ExceptionPexpect::get_trace"), DeprecationWarning)
-
+    def get_trace(self):
         """This returns an abbreviated stack trace with lines that only concern
         the caller. In other words, the stack trace inside the Wexpect module
         is not included. """
@@ -174,9 +172,7 @@ class ExceptionPexpect(Exception):
         tblist = traceback.format_list(tblist)
         return ''.join(tblist)
 
-    def __filter_not_wexpect(self, trace_list_item): # pragma: no cover
-        warnings.warn(deprecation_warning.format("ExceptionPexpect::__filter_not_wexpect"), DeprecationWarning)
-
+    def __filter_not_wexpect(self, trace_list_item):
         """This returns True if list item 0 the string 'wexpect.py' in it. """
 
         if trace_list_item[0].find('wexpect.py') == -1:
@@ -721,9 +717,15 @@ class spawn_windows ():
         """
 
         result = self.readline()
-        if result == "":
+        if self.after == self.delimiter:
             raise StopIteration
         return result
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.terminate()
 
     def readlines (self, sizehint = -1):    # File-like object.
 
