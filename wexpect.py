@@ -1655,10 +1655,8 @@ class Wtty:
         try:
             mode = self.__consin.GetConsoleMode()
             ret = (mode & 0x0004) > 0
+        finally:
             self.switchBack()
-        except:
-            self.switchBack()
-            raise
         return ret  
       
     def getwinsize(self):
@@ -1668,10 +1666,8 @@ class Wtty:
         self.switchTo()
         try:
             size = self.__consout.GetConsoleScreenBufferInfo()['Size']
+        finally:
             self.switchBack()
-        except:
-            self.switchBack()
-            raise
         return (size.Y, size.X)
         
     def setwinsize(self, r, c):
@@ -1680,10 +1676,8 @@ class Wtty:
         self.switchTo()
         try:
             self.__consout.SetConsoleScreenBufferSize(win32console.PyCOORDType(c, r))
-        except:
+        finally:
             self.switchBack()
-            raise
-        self.switchBack()
        
     def interact(self):
         """Displays the child console for interaction."""
