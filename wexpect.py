@@ -814,32 +814,6 @@ class spawn_windows ():
         n = n + self.send (os.linesep)
         return n
 
-    def sendcontrol(self, char):
-
-        """This sends a control character to the child such as Ctrl-C or
-        Ctrl-D. For example, to send a Ctrl-G (ASCII 7)::
-
-            child.sendcontrol('g')
-
-        See also, sendintr() and sendeof().
-        """
-
-        char = char.lower()
-        a = ord(char)
-        if a>=97 and a<=122:
-            a = a - ord('a') + 1
-            return self.send (chr(a))
-        d = {'@':0, '`':0,
-            '[':27, '{':27,
-            '\\':28, '|':28,
-            ']':29, '}': 29,
-            '^':30, '~':30,
-            '_':31,
-            '?':127}
-        if char not in d:
-            return 0
-        return self.send (chr(d[char]))
-
     def sendeof(self):
 
         """This sends an EOF to the child. This sends a character which causes
