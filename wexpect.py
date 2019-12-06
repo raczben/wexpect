@@ -914,9 +914,6 @@ class spawn_windows ():
         may have printed output then called exit(); but, technically, the child
         is still alive until its output is read."""
         
-        if not self.isalive():
-            raise ExceptionPexpect ('Cannot wait for dead child process.')
-        
         # We can't use os.waitpid under Windows because of 'permission denied' 
         # exception? Perhaps if not running as admin (or UAC enabled under 
         # Vista/7). Simply loop and wait for child to exit.
