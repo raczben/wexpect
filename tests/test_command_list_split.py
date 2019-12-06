@@ -33,6 +33,15 @@ class SplitCommandLineTestCase(PexpectTestCase.PexpectTestCase):
         assert len(wexpect.split_command_line('\'one one\'')) == 1
         assert len(wexpect.split_command_line(r'one\"one')) == 1
         assert len(wexpect.split_command_line(r"This^' is a^'^ test")) == 3
+        
+    def test_join_args(self):
+        cmd = 'foo bar "b a z"'
+        cmd2 = wexpect.join_args(wexpect.split_command_line(cmd))
+        self.assertEqual(cmd2,  cmd)
+        
+        cmd = ['foo', 'bar', 'b a z']
+        cmd2 = wexpect.split_command_line(wexpect.join_args(cmd))
+        self.assertEqual(cmd2,  cmd)
 
 if __name__ == '__main__':
     unittest.main()
