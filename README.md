@@ -41,19 +41,6 @@ child.sendline('exit')
 
 For more information see [examples](./examples) folder.
 
-## Code Clean up!
-
-Wexpect works only on Windows platforms. There are handy tools for other platforms. Therefore I will
-remove any non-windows code. If you see following warning in your console please contact me to 
-prevent the removal of that function.
-
-```
-################################## WARNING ##################################
-<some func> is deprecated, and will be removed soon.
-Please contact me and report it at github.com/raczben/wexpect if you use it.
-################################## WARNING ##################################
-```
-
 ---
 ## What is it?
 
@@ -121,13 +108,12 @@ child.sendline('exit')
 
 Call trace:
 
- - ::spawn                          (line 289)
- - spawn_windows::__init__()        (line 1639)
- - spawn_unix::__init__()           (line 313)
- - spawn_windows::_spawn()          (line 1660)
- - Wtty::spawn()                    (line 1932)
- - Wtty::startChild()               (line 1978)
- - win32process.CreateProcess()     (line 2024)
+ - ::spawn                          
+ - spawn_windows::__init__() 
+ - spawn_windows::_spawn()   
+ - Wtty::spawn()              
+ - Wtty::startChild()        
+ - win32process.CreateProcess()  
  
  
 ### expect()
@@ -136,20 +122,20 @@ Call trace:
 
 Call trace:
 
- - spawn_linux::expect()            (line 1285)
- - spawn_linux::expect_list()       (line 1365)
- - spawn_linux::expect_loop()       (line 1397)
- - spawn_windows::read_nonblocking() (line 1635)
+ - spawn_windows::expect()      
+ - spawn_windows::expect_list() 
+ - spawn_windows::expect_loop()  
+ - spawn_windows::read_nonblocking()
  - Wtty::read_nonblocking()
  - Wtty::readConsoleToCursor()
- - Wtty::readConsole()              (line: 2153)
- - __consout.ReadConsoleOutputCharacter() (line: 2176)
+ - Wtty::readConsole()           
+ - __consout.ReadConsoleOutputCharacter()
     
 
 ### sendline()
 
 `child.sendline('ls')`
 
- - spawn_linux::sendline()          (line 1008)
- - spawn_windows::send()            (line 1795)
- - Wtty::write()                    (line 2111)
+ - spawn_windows::sendline()    
+ - spawn_windows::send()      
+ - Wtty::write()       
