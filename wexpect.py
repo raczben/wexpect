@@ -189,7 +189,8 @@ class TIMEOUT(ExceptionPexpect):
     """Raised when a read time exceeds the timeout. """
 
 
-def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None, logfile=None, cwd=None, env=None):
+def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None, logfile=None,
+    cwd=None, env=None, echo=True):
 
     """
     This function runs the given command; waits for it to finish; then
@@ -292,8 +293,8 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
     else:
         return child_result
 
-def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, logfile=None, cwd=None, env=None,
-          codepage=None):
+def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, logfile=None, cwd=None,
+    env=None, codepage=None, echo=True):
     """This is the most essential function. The command parameter may be a string that
     includes a command and any arguments to the command. For example::
 
@@ -415,14 +416,14 @@ def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, log
         log('Working directory: %s' % cwd)
         
     return spawn_windows(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env,
-                             codepage)        
+                             codepage, echo=echo)        
 
 class spawn_windows ():
     """This is the main class interface for Wexpect. Use this class to start
     and control child applications. """
 
-    def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None, logfile=None, cwd=None, env=None,
-                 codepage=None):
+    def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
+        logfile=None, cwd=None, env=None, codepage=None, echo=True):
         """ The spawn_windows constructor. Do not call it directly. Use spawn(), or run() instead.
         """
         self.codepage = codepage
@@ -469,7 +470,7 @@ class spawn_windows ():
             self.args = None
             self.name = '<wexpect factory incomplete>'
         else:
-            self._spawn (command, args)
+            self._spawn(command, args, echo=echo)
 
     def __del__(self):
         """This makes sure that no system resources are left open. Python only
@@ -514,7 +515,7 @@ class spawn_windows ():
         s.append('delayafterterminate: ' + str(self.delayafterterminate))
         return '\n'.join(s)
  
-    def _spawn(self,command,args=[]):
+    def _spawn(self,command,args=[], echo=True):
         """This starts the given command in a child process. This does all the
         fork/exec type of stuff for a pty. This is called by __init__. If args
         is empty then command will be parsed (split on spaces) and args will be
@@ -555,7 +556,7 @@ class spawn_windows ():
         #assert self.pid is None, 'The pid member should be None.'
         #assert self.command is not None, 'The command member should not be None.'
 
-        self.wtty = Wtty(codepage=self.codepage)        
+        self.wtty = Wtty(codepage=self.codepage, echo=echo)        
     
         if self.cwd is not None:
             os.chdir(self.cwd)
@@ -1141,13 +1142,11 @@ class spawn_windows ():
     
         self.wtty.setwinsize(r, c)
       
-    ### Prototype changed
     def interact(self):
         """Makes the child console visible for interaction"""
         
         self.wtty.interact()
     
-    ### Prototype changed
     def stop_interact(self):
         """Hides the child console from the user."""
     
@@ -1159,7 +1158,7 @@ class spawn_windows ():
 
 class Wtty:
 
-    def __init__(self, timeout=30, codepage=None):
+    def __init__(self, timeout=30, codepage=None, echo=True):
         self.__buffer = StringIO()
         self.__bufferY = 0
         self.__currentReadCo = win32console.PyCOORDType(0, 0)
@@ -1181,7 +1180,7 @@ class Wtty:
         # We need a timeout for connecting to the child process
         self.timeout = timeout
         self.totalRead = 0
-        self.local_echo = False
+        self.local_echo = echo
             
     def spawn(self, command, args=[], env=None):
         """Spawns spawner.py with correct arguments."""

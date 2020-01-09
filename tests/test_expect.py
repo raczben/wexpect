@@ -109,13 +109,13 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         (one of the) the leftmost matches in the input? -- grahn)
         ... agreed! -jquast, the buffer ptr isn't forwarded on match, see first two test cases
         '''
-        p = wexpect.spawn('cat', timeout=5)
+        p = wexpect.spawn('cat', timeout=5, echo=False)
         self._expect_order(p)
 
     def test_expect_order_exact (self):
         '''Like test_expect_order(), but using expect_exact().
         '''
-        p = wexpect.spawn('cat', timeout=5)
+        p = wexpect.spawn('cat', timeout=5, echo=False)
         p.expect = p.expect_exact
         self._expect_order(p)
 
@@ -166,13 +166,13 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         '''This tests that mixed list of regex strings, TIMEOUT, and EOF all
         return the correct index when matched.
         '''
-        p = wexpect.spawn('cat', timeout=5)
+        p = wexpect.spawn('cat', timeout=5, echo=False)
         self._expect_index(p)
 
     def test_expect_index_exact (self):
         '''Like test_expect_index(), but using expect_exact().
         '''
-        p = wexpect.spawn('cat', timeout=5)
+        p = wexpect.spawn('cat', timeout=5, echo=False)
         p.expect = p.expect_exact
         self._expect_index(p)
 

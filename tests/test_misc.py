@@ -103,7 +103,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
 
     def test_readlines(self):
         " reading all lines of spawn.readlines(). "
-        child = wexpect.spawn('cat')
+        child = wexpect.spawn('cat', echo=False)
         child.sendline("abc")
         child.sendline("123")
         child.sendeof()
