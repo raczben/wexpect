@@ -1070,15 +1070,13 @@ class spawn_windows ():
                     self.match_index = index
                     return self.match_index
                 # No match at this point
-                if timeout is not None and timeout < 0:
+                if timeout is not None and end_time < time.time():
                     raise TIMEOUT ('Timeout exceeded in expect_any().')
                 # Still have time left, so read more data
                 c = self.read_nonblocking(self.maxread)
                 freshlen = len(c)
                 time.sleep (0.01)
                 incoming += c
-                if timeout is not None:
-                    timeout = end_time - time.time()
         except EOF as e:
             self.buffer = ''
             self.before = incoming
@@ -1534,6 +1532,7 @@ class Wtty:
           
         try:
             self.switchTo()
+            time.sleep(.01)
             
             if self.__currentReadCo.Y > maxconsoleY:
                 time.sleep(.2)
