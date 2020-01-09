@@ -629,31 +629,14 @@ class spawn_windows ():
                 timeout = end_time - time.time()
             time.sleep(0.1)
 
-    def getecho (self): # pragma: no cover
-        faulty_method_warning = '''
-        ################################## WARNING ##################################
-        setecho() is faulty!
-        Please contact me and report it at
-        https://github.com/raczben/wexpect/issues/18 if you use it.
-        ################################## WARNING ##################################
-        '''
-        warnings.warn(faulty_method_warning, DeprecationWarning)
+    def getecho (self):
         """This returns the terminal echo mode. This returns True if echo is
         on or False if echo is off. Child applications that are expecting you
         to enter a password often set ECHO False. See waitnoecho()."""
 
         return self.wtty.getecho()
 
-    def setecho (self, state): # pragma: no cover
-        faulty_method_warning = '''
-        ################################## WARNING ##################################
-        setecho() is faulty!
-        Please contact me and report it at
-        https://github.com/raczben/wexpect/issues/18 if you use it.
-        ################################## WARNING ##################################
-        '''
-        warnings.warn(faulty_method_warning, DeprecationWarning)
-
+    def setecho (self, state):
         """This sets the terminal echo mode on or off."""
         
         self.wtty.setecho(state)
@@ -1198,6 +1181,7 @@ class Wtty:
         # We need a timeout for connecting to the child process
         self.timeout = timeout
         self.totalRead = 0
+        self.local_echo = False
             
     def spawn(self, command, args=[], env=None):
         """Spawns spawner.py with correct arguments."""
@@ -1399,21 +1383,28 @@ class Wtty:
             records = [self.createKeyEvent(c) for c in str(s)]
             if not self.__consout:
                 return ""
+                
+            # Store the current cursor position to hide characters in local echo disabled mode (workaround).
             consinfo = self.__consout.GetConsoleScreenBufferInfo()
             startCo = consinfo['CursorPosition']
+            
+            # Send the string to console input
             wrote = self.__consin.WriteConsoleInput(records)
+            
+            # Wait until all input has been recorded by the console.
             ts = time.time()
-            while self.__consin and self.__consin.PeekConsoleInput(8) != ():
-                if time.time() > ts + len(s) * .05:
+            while self.__consin.PeekConsoleInput(8) != ():
+                if time.time() > ts + len(s) * .1 + .5:
                     break
                 time.sleep(.05)
-            if self.__consout:
+                
+            # Hide characters in local echo disabled mode (workaround).
+            if not self.local_echo:
                 self.__consout.FillConsoleOutputCharacter(screenbufferfillchar, len(s), startCo)
-        except:
+                
+            return wrote
+        finally:
             self.switchBack()
-            raise
-        self.switchBack()
-        return wrote
     
     def getCoord(self, offset):
         """Converts an offset to a point represented as a tuple."""
@@ -1614,50 +1605,23 @@ class Wtty:
         #log('refreshConsole: cursorPos %s' % cursorPos)
         
     
-    def setecho(self, state): # pragma: no cover
-        faulty_method_warning = '''
-        ################################## WARNING ##################################
-        setecho() is faulty!
-        Please contact me and report it at
-        https://github.com/raczben/wexpect/issues/18 if you use it.
-        ################################## WARNING ##################################
-        '''
-        warnings.warn(faulty_method_warning, DeprecationWarning)
-
-        """Sets the echo mode of the child console."""
-    
-        self.switchTo()
-        try:
-            mode = self.__consin.GetConsoleMode()
-            if state:
-                mode |= 0x0004
-            else:
-                mode &= ~0x0004
-            self.__consin.SetConsoleMode(mode)
-        except:
-            self.switchBack()
-            raise
-        self.switchBack()
+    def setecho(self, state):
+        """Sets the echo mode of the child console.
+        This is a workaround of the setecho. The original GetConsoleMode() / SetConsoleMode()
+        methods didn't work. See git history for the concrete implementation.
+        2020.01.09 raczben
+        """
         
-    def getecho(self): # pragma: no cover
-        faulty_method_warning = '''
-        ################################## WARNING ##################################
-        getecho() is faulty!
-        Please contact me and report it at
-        https://github.com/raczben/wexpect/issues/18 if you use it.
-        ################################## WARNING ##################################
-        '''
-        warnings.warn(faulty_method_warning, DeprecationWarning)
-
-        """Returns the echo mode of the child console."""
+        self.local_echo = state
         
-        self.switchTo()
-        try:
-            mode = self.__consin.GetConsoleMode()
-            ret = (mode & 0x0004) > 0
-        finally:
-            self.switchBack()
-        return ret  
+    def getecho(self):
+        """Returns the echo mode of the child console.
+        This is a workaround of the getecho. The original GetConsoleMode() / SetConsoleMode()
+        methods didn't work. See git history for the concrete implementation.
+        2020.01.09 raczben
+        """
+        
+        return self.local_echo
       
     def getwinsize(self):
         """Returns the size of the child console as a tuple of

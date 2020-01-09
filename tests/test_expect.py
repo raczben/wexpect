@@ -182,7 +182,7 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         self.assertEqual(index,  2, "index="+str(index))
         p.sendline ('abcd')
         index = p.expect ([wexpect.TIMEOUT,'abcd','wxyz','1234',wexpect.EOF])
-        self.assertEqual(index,  1, "index="+str(index)+str(p))
+        self.assertEqual(index,  1, "index="+str(index))
         p.sendline ('wxyz')
         index = p.expect (['54321',wexpect.TIMEOUT,'abcd','wxyz','1234',wexpect.EOF])
         self.assertEqual(index,  3, "index="+str(index)) # Expect 'wxyz'
