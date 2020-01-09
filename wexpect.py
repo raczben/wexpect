@@ -724,20 +724,11 @@ class spawn_windows ():
             lines.append(line)
         return lines
 
-    def read_nonblocking (self, size = 1, timeout = -1):
-        """This reads at most size characters from the child application. It
-        includes a timeout. If the read does not complete within the timeout
-        period then a TIMEOUT exception is raised. If the end of file is read
-        then an EOF exception will be raised. If a log file was set using
-        setlog() then all data will also be written to the log file.
+    def read_nonblocking (self, size = 1):
+        """This reads at most size characters from the child application. If
+        the end of file is read then an EOF exception will be raised.
 
-        If timeout is None then the read may block indefinitely. If timeout is -1
-        then the self.timeout value is used. If timeout is 0 then the child is
-        polled and if there was no data immediately ready then this will raise
-        a TIMEOUT exception.
-
-        The timeout refers only to the amount of time to read at least one
-        character. This is not effected by the 'size' parameter, so if you call
+        This is not effected by the 'size' parameter, so if you call
         read_nonblocking(size=100, timeout=30) and only one character is
         available right away then one character will be returned immediately.
         It will not wait for 30 seconds for another 99 characters to come in.
@@ -747,21 +738,11 @@ class spawn_windows ():
         if self.closed:
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
         
-        if timeout == -1:
-            timeout = self.timeout
-         
-        s = self.wtty.read_nonblocking(timeout, size)
-        
-        if s == '':
-            if not self.wtty.isalive():
-                self.flag_eof = True
-                raise EOF('End Of File (EOF) in read_nonblocking().')
-            if timeout is None:
-                # Do not raise TIMEOUT because we might be waiting for EOF
-                # sleep to keep CPU utilization down
-                time.sleep(.05)
-            else:
-                raise TIMEOUT ('Timeout exceeded in read_nonblocking().')
+        try:
+            s = self.wtty.read_nonblocking(size)
+        except:
+            self.flag_eof = True
+            raise
         
         if self.logfile is not None:
             self.logfile.write (s)
@@ -1092,9 +1073,9 @@ class spawn_windows ():
                 if timeout is not None and timeout < 0:
                     raise TIMEOUT ('Timeout exceeded in expect_any().')
                 # Still have time left, so read more data
-                c = self.read_nonblocking(self.maxread, timeout)
+                c = self.read_nonblocking(self.maxread)
                 freshlen = len(c)
-                time.sleep (0.0001)
+                time.sleep (0.01)
                 incoming += c
                 if timeout is not None:
                     timeout = end_time - time.time()
@@ -1547,37 +1528,23 @@ class Wtty:
         return s
     
     
-    def read_nonblocking(self, timeout, size):
+    def read_nonblocking(self, size):
         """Reads data from the console if available, otherwise
-           waits timeout seconds, and writes the string 'None'
-           to the pipe if no data is available after that time.""" 
+           returns empty string""" 
           
         try:
             self.switchTo()
             
-            while True:
-                #Wait for child process to be paused
-                if self.__currentReadCo.Y > maxconsoleY:
-                    time.sleep(.2)
+            if self.__currentReadCo.Y > maxconsoleY:
+                time.sleep(.2)
+                
+            s = self.readConsoleToCursor()
             
-                start = time.time()
-                s = self.readConsoleToCursor()
-                
-                if self.__currentReadCo.Y > maxconsoleY:
-                    self.refreshConsole()
-                
-                if len(s) != 0:
-                    return s
-                
-                if not self.isalive() or timeout <= 0:
-                    return ''
-                
-                time.sleep(0.001)
-                end = time.time()
-                timeout -= end - start
+            if self.__currentReadCo.Y > maxconsoleY:
+                self.refreshConsole()
+            
+            return s
                  
-        except EOF as e:
-            return ''
         finally:
             self.switchBack()
             
