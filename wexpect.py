@@ -109,14 +109,6 @@ except ImportError as e: # pragma: no cover
 screenbufferfillchar = '\4'
 maxconsoleY = 8000
 
-warnings.simplefilter("always", category=DeprecationWarning)
-deprecation_warning = '''
-################################## WARNING ##################################
-{} is deprecated, and will be removed soon.
-Please contact me and report it at github.com/raczben/wexpect if you use it.
-################################## WARNING ##################################
-'''
-
 # The version is handled by the package: pbr, which derives the version from the git tags.
 try:
     __version__ = pkg_resources.require("wexpect")[0].version
@@ -130,17 +122,16 @@ __all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'which',
 # Create logger: We write logs only to file. Printing out logs are dangerous, because of the deep
 # console manipulation.
 #
+logger = logging.getLogger('wexpect')
 try:
     logger_level = os.environ['WEXPECT_LOGGER_LEVEL']
+    logger.setLevel(logger_level)
+    fh = logging.FileHandler('wexpect.log', 'w', 'utf-8')
+    formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
 except KeyError as _:
-    logger_level = logging.ERROR
-
-logger = logging.getLogger('wexpect')
-logger.setLevel(logger_level)
-fh = logging.FileHandler('wexpect.log', 'w', 'utf-8')
-formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-logger.addHandler(fh)
+    logger.setLevel(logging.ERROR)
 
 # Test the logger
 logger.info('wexpect imported; logger working')
