@@ -443,6 +443,7 @@ class spawn_windows ():
         self.signalstatus = None
         self.status = None # status returned by os.waitpid
         self.flag_eof = False
+        self.flag_child_finished = False
         self.pid = None
         self.child_fd = -1 # initially closed
         self.timeout = timeout
@@ -739,8 +740,17 @@ class spawn_windows ():
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
         
         try:
+            # The real child and it's console are two different process. The console dies 0.1 sec
+            # later to be able to read the child's last output (before EOF). So here we check
+            # isalive() (which checks the real child.) and try a last read on the console. To catch
+            # the last output.
+            # The flag_child_finished flag shows that this is the second trial, where we raise the EOF.
+            if self.flag_child_finished:
+                raise EOF('self.self.flag_child_finished')
+            if not self.isalive():
+                self.flag_child_finished = True
             s = self.wtty.read_nonblocking(size)
-        except:
+        except EOF:
             self.flag_eof = True
             raise
         
