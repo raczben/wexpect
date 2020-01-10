@@ -544,16 +544,7 @@ class spawn_windows ():
         
         return True
 
-    def waitnoecho (self, timeout=-1): # pragma: no cover
-        faulty_method_warning = '''
-        ################################## WARNING ##################################
-        waitnoecho() is faulty!
-        Please contact me and report it at
-        https://github.com/raczben/wexpect/issues/18 if you use it.
-        ################################## WARNING ##################################
-        '''
-        warnings.warn(faulty_method_warning, DeprecationWarning)
-
+    def waitnoecho (self, timeout=-1):
         """This waits until the terminal ECHO flag is set False. This returns
         True if the echo mode is off. This returns False if the ECHO flag was
         not set False before the timeout. This can be used to detect when the
@@ -1947,7 +1938,3 @@ def split_command_line(command_line, escape_char = '^'):
     if arg != '':
         arg_list.append(arg)
     return arg_list
-
-
-
-
