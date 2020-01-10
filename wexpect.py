@@ -337,34 +337,6 @@ def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, log
     effect the size of the incomming data buffer. You will still have
     access to the full buffer after expect() returns.
 
-    The logfile member turns on or off logging. All input and output will
-    be copied to the given file object. Set logfile to None to stop
-    logging. This is the default. Set logfile to sys.stdout to echo
-    everything to standard output. The logfile is flushed after each write.
-
-    Example log input and output to a file::
-
-        child = wexpect.spawn('some_command')
-        fout = file('mylog.txt','w')
-        child.logfile = fout
-
-    Example log to stdout::
-
-        child = wexpect.spawn('some_command')
-        child.logfile = sys.stdout
-
-    The logfile_read and logfile_send members can be used to separately log
-    the input from the child and output sent to the child. Sometimes you
-    don't want to see everything you write to the child. You only want to
-    log what the child sends back. For example::
-    
-        child = wexpect.spawn('some_command')
-        child.logfile_read = sys.stdout
-
-    To separately log output sent to the child use logfile_send::
-    
-        self.logfile_send = fout
-
     The delaybeforesend helps overcome a weird behavior that many users
     were experiencing. The typical problem was that a user would expect() a
     "Password:" prompt and then immediately call sendline() to send the
@@ -390,17 +362,17 @@ def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, log
     If the child exited normally then exitstatus will store the exit return code.
     """
 
-    log('=' * 80)
-    log('Buffer size: %s' % maxread)
+    logger.debug('=' * 80)
+    logger.debug('Buffer size: %s' % maxread)
     if searchwindowsize:
-        log('Search window size: %s' % searchwindowsize)
-    log('Timeout: %ss' % timeout)
+        logger.debug('Search window size: %s' % searchwindowsize)
+    logger.debug('Timeout: %ss' % timeout)
     if env:
-        log('Environment:')
+        logger.debug('Environment:')
         for name in env:
-            log('\t%s=%s' % (name, env[name]))
+            logger.debug('\t%s=%s' % (name, env[name]))
     if cwd:
-        log('Working directory: %s' % cwd)
+        logger.debug('Working directory: %s' % cwd)
         
     return spawn_windows(command, args, timeout, maxread, searchwindowsize, logfile, cwd, env,
                              codepage, echo=echo)        
@@ -1442,15 +1414,14 @@ class Wtty:
         consinfo = self.__consout.GetConsoleScreenBufferInfo()
         cursorPos = consinfo['CursorPosition']
         
-        #log('=' * 80)
-        #log('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
+        logger.debug('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
 
         isSameX = cursorPos.X == self.__currentReadCo.X
         isSameY = cursorPos.Y == self.__currentReadCo.Y
         isSamePos = isSameX and isSameY
         
-        #log('isSameY: %r' % isSameY)
-        #log('isSamePos: %r' % isSamePos)
+        logger.debug('isSameY: %r' % isSameY)
+        logger.debug('isSamePos: %r' % isSamePos)
         
         if isSameY or not self.lastReadData.endswith('\r\n'):
             # Read the current slice again
@@ -1458,7 +1429,7 @@ class Wtty:
             self.__currentReadCo.X = 0
             self.__currentReadCo.Y = self.__bufferY
         
-        #log('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
+        logger.debug('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
         
         raw = self.readConsole(self.__currentReadCo, cursorPos)
         rawlist = []
@@ -1474,16 +1445,14 @@ class Wtty:
                 self.__bufferY += len(rawlist) - i
                 break
         
-        #log('lastReadData: %r' % self.lastReadData)
-        #log('s: %r' % s)
+        logger.debug('lastReadData: %r' % self.lastReadData)
+        logger.debug('s: %r' % s)
         
-        #isSameData = False
         if isSamePos and self.lastReadData == s:
-            #isSameData = True
+            logger.debug('isSamePos and self.lastReadData == s')
             s = ''
         
-        #log('isSameData: %r' % isSameData)
-        #log('s: %r' % s)
+        logger.debug('s: %r' % s)
         
         if s:
             lastReadData = self.lastReadData
@@ -1493,8 +1462,8 @@ class Wtty:
                 # Detect changed lines
                 self.__buffer.seek(pos)
                 buf = self.__buffer.read()
-                #log('buf: %r' % buf)
-                #log('raw: %r' % raw)
+                logger.debug('buf: %r' % buf)
+                logger.debug('raw: %r' % raw)
                 if raw.startswith(buf):
                     # Line has grown
                     rawslice = raw[len(buf):]
@@ -1506,7 +1475,7 @@ class Wtty:
                 else:
                     # Cursor has been repositioned
                     s = '\r' + s        
-                #log('s:   %r' % s)
+                logger.debug('s:   %r' % s)
             self.__buffer.seek(pos)
             self.__buffer.truncate()
             self.__buffer.write(raw)
@@ -1556,9 +1525,10 @@ class Wtty:
         
         self.__bufferY = 0
         self.__buffer.truncate(0)
-        #consinfo = self.__consout.GetConsoleScreenBufferInfo()
-        #cursorPos = consinfo['CursorPosition']
-        #log('refreshConsole: cursorPos %s' % cursorPos)
+        
+        consinfo = self.__consout.GetConsoleScreenBufferInfo()
+        cursorPos = consinfo['CursorPosition']
+        logger.debug('refreshConsole: cursorPos %s' % cursorPos)
         
     
     def setecho(self, state):
@@ -1629,19 +1599,19 @@ class ConsoleReader: # pragma: no cover
    
     def __init__(self, path, pid, tid, env = None, cp=None, logdir=None):
         self.logdir = logdir
-        log('=' * 80, 'consolereader', logdir)
-        log("OEM code page: %s" % windll.kernel32.GetOEMCP(), 'consolereader', logdir)
-        log("ANSI code page: %s" % windll.kernel32.GetACP(), 'consolereader', logdir)
-        log("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP(), 'consolereader', logdir)
+        logger.debug('=' * 80, 'consolereader', logdir)
+        logger.debug("OEM code page: %s" % windll.kernel32.GetOEMCP(), 'consolereader', logdir)
+        logger.debug("ANSI code page: %s" % windll.kernel32.GetACP(), 'consolereader', logdir)
+        logger.debug("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP(), 'consolereader', logdir)
         if cp:
-            log("Setting console output code page to %s" % cp, 'consolereader', logdir)
+            logger.debug("Setting console output code page to %s" % cp, 'consolereader', logdir)
             try:
                 win32console.SetConsoleOutputCP(cp)
             except Exception as e:
-                log(e, 'consolereader', logdir)
+                logger.debug(e, 'consolereader', logdir)
             else:
-                log("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP(), 'consolereader', logdir)
-        log('Spawning %s' % path, 'consolereader', logdir)
+                logger.debug("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP(), 'consolereader', logdir)
+        logger.debug('Spawning %s' % path, 'consolereader', logdir)
         try:
             try:
                 consout = self.getConsoleOut()
@@ -1651,7 +1621,7 @@ class ConsoleReader: # pragma: no cover
                 self.__childProcess, _, childPid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
                                                                              0, None, None, si)
             except Exception as e:
-                log(e, 'consolereader', logdir)
+                logger.debug(e, 'consolereader', logdir)
                 time.sleep(.1)
                 win32api.PostThreadMessage(int(tid), win32con.WM_USER, 0, 0)
                 sys.exit()
@@ -1677,31 +1647,25 @@ class ConsoleReader: # pragma: no cover
                         # Don't log. Child process will exit regardless when 
                         # calling sys.exit
                         if e.args[0] != winerror.ERROR_ACCESS_DENIED:
-                            log(e, 'consolereader', logdir)
+                            logger.debug(e, 'consolereader', logdir)
                     sys.exit()
                 
                 if cursorPos.Y > maxconsoleY and not paused:
-                    #log('ConsoleReader.__init__: cursorPos %s' 
-                               #% cursorPos, 'consolereader', logdir)
-                    #log('suspendThread', 'consolereader', logdir)
                     self.suspendThread()
                     paused = True
                     
                 if cursorPos.Y <= maxconsoleY and paused:
-                    #log('ConsoleReader.__init__: cursorPos %s' 
-                               #% cursorPos, 'consolereader', logdir)
-                    #log('resumeThread', 'consolereader', logdir)
                     self.resumeThread()
                     paused = False
                                     
                 time.sleep(.1)
         except Exception as e:
-            log(e, 'consolereader', logdir)
+            logger.debug(e, 'consolereader', logdir)
             time.sleep(.1)
         
     
     def handler(self, sig):       
-        log(sig, 'consolereader', logdir)
+        logger.debug(sig, 'consolereader', logdir)
         return False
 
     def getConsoleOut(self):
@@ -1919,71 +1883,6 @@ class searcher_re (object):
         self.end = self.match.end()
         return best_index
 
-def log(e, suffix='', logdir=None):
-    if isinstance(e, Exception):
-        # Get the full traceback
-        e = traceback.format_exc()
-    #if hasattr(sys.stdout, 'isatty') and sys.stdout.isatty():
-        ## Only try to print if stdout is a tty, otherwise we might get
-        ## an 'invalid handle' exception
-        #print e
-    if not logdir:
-        if getattr(sys, 'frozen', False):
-            logdir = os.path.splitext(os.path.basename(sys.executable))[0]
-        else:
-            logdir = os.path.split(os.path.dirname(os.path.abspath(__file__)))
-            if logdir[-1] == 'lib':
-                logdir.pop()
-            logdir = logdir[-1]
-    if sys.platform == "win32":
-        logdir = os.path.join(SHGetSpecialFolderPath(0, CSIDL_APPDATA), 
-                              logdir, "logs")
-    elif sys.platform == "darwin":
-        logdir = os.path.join(os.path.expanduser("~"), "Library", "Logs", 
-                              logdir)
-    else:
-        logdir = os.path.join(os.getenv("XDG_DATA_HOME", 
-                                        os.path.expandvars("$HOME/.local/share")), 
-                                        logdir, "logs")
-    if not os.path.exists(logdir):
-        try:
-            os.makedirs(logdir)
-        except (OSError, WindowsError):
-            pass
-    if os.path.isdir(logdir) and os.access(logdir, os.W_OK):
-        logfile = os.path.join(logdir, 'wexpect%s.log' % suffix)
-        if os.path.isfile(logfile):
-            try:
-                logstat = os.stat(logfile)
-            except Exception as exception:
-                pass
-            else:
-                try:
-                    mtime = time.localtime(logstat.st_mtime)
-                except ValueError as exception:
-                    # This can happen on Windows because localtime() is buggy on
-                    # that platform. See:
-                    # http://stackoverflow.com/questions/4434629/zipfile-module-in-python-runtime-problems
-                    # http://bugs.python.org/issue1760357
-                    # To overcome this problem, we ignore the real modification
-                    # date and force a rollover
-                    mtime = time.localtime(time() - 60 * 60 * 24)
-                if time.localtime()[:3] > mtime[:3]:
-                    # do rollover
-                    try:
-                        os.remove(logfile)
-                    except Exception as exception:
-                        pass
-        try:
-            fout = open(logfile, 'a')
-        except:
-            pass
-        else:
-            ts = time.time()
-            fout.write('%s,%s %s\n' % (time.strftime("%Y-%m-%d %H:%M:%S",
-                                                      time.localtime(ts)), 
-                                       ('%3f' % (ts - int(ts)))[2:5], e))
-            fout.close()   
 
 def join_args(args):
     """Joins arguments into a command line. It quotes all arguments that contain
