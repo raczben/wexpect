@@ -122,20 +122,21 @@ try:
     __version__ = pkg_resources.require("wexpect")[0].version
 except: # pragma: no cover
     __version__ = '0.0.1.unkowndev0'
-__revision__ = '$Revision: 399 $'
 
 __all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'which',
-    'split_command_line', '__version__', '__revision__']
+    'split_command_line', '__version__']
 
 #
 # Create logger: We write logs only to file. Printing out logs are dangerous, because of the deep
 # console manipulation.
 #
+try:
+    logger_level = os.environ['WEXPECT_LOGGER_LEVEL']
+except KeyError as _:
+    logger_level = logging.ERROR
+
 logger = logging.getLogger('wexpect')
-if 'dev' in __version__ :
-    logger.setLevel(logging.DEBUG)
-else:
-    logger.setLevel(logging.INFO)
+logger.setLevel(logger_level)
 fh = logging.FileHandler('wexpect.log', 'w', 'utf-8')
 formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
@@ -480,7 +481,6 @@ class spawn_windows ():
 
         s = []
         s.append(repr(self))
-        s.append('version: ' + __version__ + ' (' + __revision__ + ')')
         s.append('command: ' + str(self.command))
         s.append('args: ' + str(self.args))
         s.append('searcher: ' + str(self.searcher))
