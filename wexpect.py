@@ -394,14 +394,9 @@ def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, log
     It uses the same logic that "which" uses to find executables.
 
     If you wish to get the exit status of the child you must call the
-    close() method. The exit or signal status of the child will be stored
-    in self.exitstatus or self.signalstatus. If the child exited normally
-    then exitstatus will store the exit return code and signalstatus will
-    be None. If the child was terminated abnormally with a signal then
-    signalstatus will store the signal value and exitstatus will be None.
-    If you need more detail you can also read the self.status member which
-    stores the status returned by os.waitpid. You can interpret this using
-    os.WIFEXITED/os.WEXITSTATUS or os.WIFSIGNALED/os.TERMSIG. """
+    close() method. The exit status of the child will be stored in self.exitstatus.
+    If the child exited normally then exitstatus will store the exit return code.
+    """
 
     log('=' * 80)
     log('Buffer size: %s' % maxread)
@@ -440,7 +435,6 @@ class spawn_windows ():
         self.match_index = None
         self.terminated = True
         self.exitstatus = None
-        self.signalstatus = None
         self.status = None # status returned by os.waitpid
         self.flag_eof = False
         self.flag_child_finished = False
@@ -455,11 +449,8 @@ class spawn_windows ():
         self.buffer = '' # This is the read buffer. See maxread.
         self.searchwindowsize = searchwindowsize # Anything before searchwindowsize point is preserved, but not searched.
         self.delaybeforesend = 0.05 # Sets sleep time used just before sending data to child. Time in seconds.
-        self.delayafterclose = 0.1 # Sets delay in close() method to allow kernel time to update process status. Time in seconds.
         self.delayafterterminate = 0.1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
-        self.softspace = False # File-like object.
         self.name = '<' + repr(self) + '>' # File-like object.
-        self.encoding = None # File-like object.
         self.closed = True # File-like object.
         self.ocwd = os.getcwd()
         self.cwd = cwd
@@ -512,7 +503,6 @@ class spawn_windows ():
         s.append('ignorecase: ' + str(self.ignorecase))
         s.append('searchwindowsize: ' + str(self.searchwindowsize))
         s.append('delaybeforesend: ' + str(self.delaybeforesend))
-        s.append('delayafterclose: ' + str(self.delayafterclose))
         s.append('delayafterterminate: ' + str(self.delayafterterminate))
         return '\n'.join(s)
  
