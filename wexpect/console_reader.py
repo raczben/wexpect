@@ -1,34 +1,65 @@
+"""Wexpect is a Windows variant of pexpect https://pexpect.readthedocs.io.
+
+Wexpect is a Python module for spawning child applications and controlling
+them automatically. 
+
+console_reader Implements a virtual terminal, and starts the child program.
+The main wexpect.Spawn class connect to this class to reach the child's terminal.
+
+Credits: Noah Spurrier, Richard Holden, Marco Molteni, Kimberley Burchett,
+Robert Stone, Hartmut Goebel, Chad Schroeder, Erick Tryzelaar, Dave Kirby, Ids
+vander Molen, George Todd, Noel Taylor, Nicolas D. Cesar, Alexander Gattin,
+Geoffrey Marshall, Francisco Lourenco, Glen Mabey, Karthik Gurusamy, Fernando
+Perez, Corey Minyard, Jon Cohen, Guillaume Chazarain, Andrew Ryan, Nick
+Craig-Wood, Andrew Stone, Jorgen Grahn, Benedek Racz
+
+Free, open source, and all that good stuff.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Wexpect Copyright (c) 2019 Benedek Racz
+
+"""
+
 import time
-import sys
 import logging
 import os
-import re
-import shutil
-import types
 import traceback
-import signal
 import pkg_resources 
 from io import StringIO
 
-from ctypes import windll
+import ctypes
 import pywintypes
-from win32com.shell.shell import SHGetSpecialFolderPath
 import win32console
 import win32process
 import win32con
-import win32gui
-import win32api
 import win32file
 import winerror
 import win32pipe
-  
-__version__ = 'test'
+import socket
 
 # 
 # System-wide constants
 #    
 screenbufferfillchar = '\4'
 maxconsoleY = 8000
+default_port = 4321
 
 # The version is handled by the package: pbr, which derives the version from the git tags.
 try:
@@ -52,25 +83,19 @@ try:
 except KeyError:
     logger.setLevel(logging.ERROR)
 
-# Test the logger
-#logger.info('wexpect imported; logger working')
-
-
-class ConsoleReader:
+class ConsoleReaderBase:
     """Consol class (aka. client-side python class) for the child.
     
     This class initialize the console starts the child in it and reads the console periodically.
     """
 
-    def __init__(self, path, parent_pid, parent_tid, cp=None):
-        """Initialize the console starts the child in it and reads the console periodically.
-
-        
+    def __init__(self, path, parent_pid, cp=None, window_size_x=80, window_size_y=25,
+                 buffer_size_x=80, buffer_size_y=16000, **kwargs):
+        """Initialize the console starts the child in it and reads the console periodically.        
 
         Args:
             path (str): Child's executable with arguments.
             parent_pid (int): Parent (aka. host) process process-ID
-            parent_tid (int): Parent (aka. host) process thread-ID
             cp (:obj:, optional): Output console code page.
         """
         self.lastRead  = 0
@@ -79,25 +104,27 @@ class ConsoleReader:
         self.totalRead = 0
         self.__buffer = StringIO()
         self.__currentReadCo = win32console.PyCOORDType(0, 0)
-        
+        self.pipe = None
+        self.connection = None
+        self.consin = None
+        self.consout = None
+        self.local_echo = True
         
         logger.info("ConsoleReader started")
-        logger.info("parent_tid %s" % parent_tid)
-        self.create_pipe()
+        
         if cp:
             try:
                 logger.info("Setting console output code page to %s" % cp)
                 win32console.SetConsoleOutputCP(cp)
-                logger.info("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP())
+                logger.info("Console output code page: %s" % ctypes.windll.kernel32.GetConsoleOutputCP())
             except Exception as e:
                 logger.info(e)
                 
         try:
+            self.create_connection(**kwargs)
             logger.info('Spawning %s' % path)
             try:
                 self.initConsole()
-                
-                time.sleep(1)
                 si = win32process.GetStartupInfo()
                 self.__childProcess, _, childPid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
                                                                              0, None, None, si)
@@ -111,14 +138,18 @@ class ConsoleReader:
                 time.sleep(.1)
                 return
             
-            time.sleep(.1)
+            time.sleep(.2)
+            self.write('ls')
+            self.write(os.linesep)
                   
             paused = False
-            
    
             while True:
                 consinfo = self.consout.GetConsoleScreenBufferInfo()
                 cursorPos = consinfo['CursorPosition']
+                self.send_to_host(self.readConsoleToCursor())
+                s = self.get_from_host()
+                self.write(s)
                 
                 if win32process.GetExitCodeProcess(self.__childProcess) != win32con.STILL_ACTIVE:
                     time.sleep(.1)
@@ -131,6 +162,10 @@ class ConsoleReader:
                         """
                         if e.args[0] != winerror.ERROR_ACCESS_DENIED:
                             logger.info(e)
+                           
+                    time.sleep(.1) 
+                    self.send_to_host(self.readConsoleToCursor())
+                    time.sleep(.1) 
                     return
                 
                 if cursorPos.Y > maxconsoleY and not paused:
@@ -144,36 +179,63 @@ class ConsoleReader:
                     paused = False
                                     
                 time.sleep(.1)
-        except Exception as e:
-            logger.error(e)
+        except:
+            logger.error(traceback.format_exc())
             time.sleep(.1)
+        finally:
+            self.close_connection()
             
-    def create_pipe(self):
-        pid = win32process.GetCurrentProcessId()
-        pipe_name = 'wexpect_pipe_c2s_{}'.format(pid)
-        pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
-        logger.info('Start pipe server: %s', pipe_full_path)
-        self.pipe = win32pipe.CreateNamedPipe(
-            pipe_full_path,
-            win32pipe.PIPE_ACCESS_DUPLEX,
-            win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
-            1, 65536, 65536, 0, None)
-        logger.info("waiting for client")
-        win32pipe.ConnectNamedPipe(self.pipe, None)
-        logger.info('got client')
+    def write(self, s):
+        """Writes input into the child consoles input buffer."""
+    
+        if len(s) == 0:
+            return 0
+        if s[-1] == '\n':
+            s = s[:-1]
+        records = [self.createKeyEvent(c) for c in str(s)]
+        if not self.consout:
+            return ""
             
-    def write_pipe(self, msg):
-        # convert to bytes
-        msg_bytes = str.encode(msg)
-        win32file.WriteFile(self.pipe, msg_bytes)
+        # Store the current cursor position to hide characters in local echo disabled mode (workaround).
+        consinfo = self.consout.GetConsoleScreenBufferInfo()
+        startCo = consinfo['CursorPosition']
+        
+        # Send the string to console input
+        wrote = self.consin.WriteConsoleInput(records)
+        
+        # Wait until all input has been recorded by the console.
+        ts = time.time()
+        while self.consin.PeekConsoleInput(8) != ():
+            if time.time() > ts + len(s) * .1 + .5:
+                break
+            time.sleep(.05)
             
-    def initConsole(self, consout=None):
+        # Hide characters in local echo disabled mode (workaround).
+        if not self.local_echo:
+            self.consout.FillConsoleOutputCharacter(screenbufferfillchar, len(s), startCo)
+            
+        return wrote
+    
+    def createKeyEvent(self, char):
+        """Creates a single key record corrosponding to
+            the ascii character char."""
+        
+        evt = win32console.PyINPUT_RECORDType(win32console.KEY_EVENT)
+        evt.KeyDown = True
+        evt.Char = char
+        evt.RepeatCount = 1
+        return evt   
+            
+    def initConsole(self, consout=None, window_size_x=80, window_size_y=25, buffer_size_x=80,
+                    buffer_size_y=16000):
         if not consout:
             consout=self.getConsoleOut()
             
-        rect = win32console.PySMALL_RECTType(0, 0, 79, 24)
+        self.consin = win32console.GetStdHandle(win32console.STD_INPUT_HANDLE)
+            
+        rect = win32console.PySMALL_RECTType(0, 0, window_size_x-1, window_size_y-1)
         consout.SetConsoleWindowInfo(True, rect)
-        size = win32console.PyCOORDType(80, 16000)
+        size = win32console.PyCOORDType(buffer_size_x, buffer_size_y)
         consout.SetConsoleScreenBufferSize(size)
         pos = win32console.PyCOORDType(0, 0)
         # Use NUL as fill char because it displays as whitespace
@@ -238,11 +300,6 @@ class ConsoleReader:
             consinfo = self.consout.GetConsoleScreenBufferInfo()
             endCo = consinfo['CursorPosition']
             endCo= self.getCoord(0 + self.getOffset(endCo))
-            # endCo.Y = endCo.Y+1
-            # logger.info(endCo.Y+1)
-            
-        logger.info(startCo)
-        logger.info(endCo)
         
         buff = []
         self.lastRead = 0
@@ -266,7 +323,6 @@ class ConsoleReader:
 
             startCo = endPoint
 
-        logger.info(repr(s))
         return ''.join(buff)
     
     
@@ -304,7 +360,6 @@ class ConsoleReader:
             raw = raw[self.__consSize.X:]
         raw = ''.join(rawlist)
         s = self.parseData(raw)
-        logger.debug(s)
         for i, line in enumerate(reversed(rawlist)):
             if line.endswith(screenbufferfillchar):
                 # Record the Y offset where the most recent line break was detected
@@ -318,8 +373,6 @@ class ConsoleReader:
             logger.debug('isSamePos and self.lastReadData == s')
             s = ''
         
-        logger.debug('s: %r' % s)
-        
         if s:
             lastReadData = self.lastReadData
             pos = self.getOffset(self.__currentReadCo)
@@ -328,8 +381,6 @@ class ConsoleReader:
                 # Detect changed lines
                 self.__buffer.seek(pos)
                 buf = self.__buffer.read()
-                logger.debug('buf: %r' % buf)
-                logger.debug('raw: %r' % raw)
                 if raw.startswith(buf):
                     # Line has grown
                     rawslice = raw[len(buf):]
@@ -340,8 +391,7 @@ class ConsoleReader:
                     self.lastRead = lastRead
                 else:
                     # Cursor has been repositioned
-                    s = '\r' + s        
-                logger.debug('s:   %r' % s)
+                    s = '\r' + s
             self.__buffer.seek(pos)
             self.__buffer.truncate()
             self.__buffer.write(raw)
@@ -351,88 +401,80 @@ class ConsoleReader:
 
         return s
     
+class ConsoleReaderSocket(ConsoleReaderBase): 
     
-def client(path, pid, tid):
-    try:
-        w = ConsoleReader(path, pid, tid)
-        time.sleep(1)
-        w.write_pipe(w.readConsoleToCursor())
-    except Exception:
-        tb = traceback.format_exc()
-        logger.error(tb)
-    
-                
-def pipe_client(conpid):
-    pipe_name = 'wexpect_pipe_c2s_{}'.format(conpid)
-    pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
-    print('Trying to connect to pipe: {}'.format(pipe_full_path))
-    quit = False
-
-    while not quit:
+        
+    def create_connection(self, **kwargs):
+        
+        self.port = kwargs['port']
+        # Create a TCP/IP socket
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = ('localhost', self.port)
+        self.sock.bind(server_address)
+        logger.info(f'Socket started at port: {self.port}')
+        
+        # Listen for incoming connections
+        self.sock.listen(1)
+        self.connection, client_address = self.sock.accept()
+        self.connection.settimeout(.2)
+        logger.info(f'Client connected: {client_address}')
+            
+    def close_connection(self):
+        if self.connection:
+            self.connection.close()
+            
+    def send_to_host(self, msg):
+        # convert to bytes
+        msg_bytes = str.encode(msg)
+        self.connection.sendall(msg_bytes)
+        
+    def get_from_host(self):
         try:
-            handle = win32file.CreateFile(
-                pipe_full_path,
-                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                0,
-                None,
-                win32file.OPEN_EXISTING,
-                0,
-                None
-            )
-            res = win32pipe.SetNamedPipeHandleState(handle, win32pipe.PIPE_READMODE_MESSAGE, None, None)
-            if res == 0:
-                print(f"SetNamedPipeHandleState return code: {res}")
-            while True:
-                resp = win32file.ReadFile(handle, 64*1024)
-                print(f"message: {resp}")
-        except pywintypes.error as e:
-            if e.args[0] == 2:
-                print("no pipe, trying again in a bit")
-                time.sleep(0.2)
-            elif e.args[0] == 109:
-                print("broken pipe, bye bye")
-                quit = True
-
-
-def main():
-    pass
+            msg = self.connection.recv(4096)
+        except socket.timeout as e:
+            err = e.args[0]
+            # this next if/else is a bit redundant, but illustrates how the
+            # timeout exception is setup
+            if err == 'timed out':
+                logger.debug('recv timed out, retry later')
+                return ''
+            else:
+                raise
+        else:
+            if len(msg) == 0:
+                raise Exception('orderly shutdown on server end')
+            else:
+                # got a message do something :)
+                return msg.decode()
+    
+    
+class ConsoleReaderPipe(ConsoleReaderBase):
+    def create_connection(self):
+        pid = win32process.GetCurrentProcessId()
+        pipe_name = 'wexpect_{}'.format(pid)
+        pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
+        logger.info('Start pipe server: %s', pipe_full_path)
+        self.pipe = win32pipe.CreateNamedPipe(
+            pipe_full_path,
+            win32pipe.PIPE_ACCESS_DUPLEX,
+            win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
+            1, 65536, 65536, 0, None)
+        logger.info("waiting for client")
+        win32pipe.ConnectNamedPipe(self.pipe, None)
+        logger.info('got client')
         
-    
-if __name__ == '__main__':
-
-    si = win32process.GetStartupInfo()
-    si.dwFlags = win32process.STARTF_USESHOWWINDOW
-    si.wShowWindow = win32con.SW_HIDE
-    pyargs = ['-c']
-    
-    dirname = os.path.dirname(sys.executable 
-                              if getattr(sys, 'frozen', False) else 
-                              os.path.abspath(__file__))
-    
-#    client('uname')
-    
-    pid = win32process.GetCurrentProcessId()
-    tid = win32api.GetCurrentThreadId()
-    
-    commandLine = '"%s" %s "%s"' % (os.path.join(dirname, 'python.exe') 
-                                    if getattr(sys, 'frozen', False) else 
-                                    os.path.join(os.path.dirname(sys.executable), 'python.exe'), 
-                                    ' '.join(pyargs), 
-                                    "import sys;"
-                                    "sys.path.append('D:\\\\bt\\\\wexpect');"
-                                    "import console_reader;"
-                                    "import time;"
-                                    "console_reader.client('uname', {tid}, {pid});".format(pid=pid, tid=tid)
-                                    )
-                     
+    def close_connection(self):
+        if self.pipe:
+            raise Exception(f'Unimplemented close')
         
-    print(commandLine)
+    def send_to_host(self, msg):
+        # convert to bytes
+        msg_bytes = str.encode(msg)
+        win32file.WriteFile(self.pipe, msg_bytes)
     
-    __oproc, _, conpid, __otid = win32process.CreateProcess(None, commandLine, None, None, False, 
-                                                    win32process.CREATE_NEW_CONSOLE, None, None, si)
-#    time.sleep(3)
-    pipe_client(conpid)
-   
-
-    time.sleep(5)
+    def get_from_host(self):
+        resp = win32file.ReadFile(self.pipe, 64*1024)
+        ret = resp[1]
+        return ret
         
+         
