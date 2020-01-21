@@ -82,9 +82,11 @@ def init_logger():
             logger_filename = os.environ['WEXPECT_LOGGER_FILENAME']
         except KeyError:
             pid = os.getpid()
-            logger_filename = f'wexpect_{pid}'
+            logger_filename = f'./.wlog/wexpect_{pid}'
         logger.setLevel(logger_level)
-        fh = logging.FileHandler(f'{logger_filename}.log', 'w', 'utf-8')
+        logger_filename = f'{logger_filename}.log'
+        os.makedirs(os.path.dirname(logger_filename), exist_ok=True)
+        fh = logging.FileHandler(logger_filename, 'w', 'utf-8')
         formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
         logger.addHandler(fh)
@@ -142,10 +144,6 @@ class ConsoleReaderBase:
             except Exception as e:
                 logger.info(e)
                 return
-            
-            time.sleep(.2)
-            self.write('ls')
-            self.write(os.linesep)
                   
             paused = False
    
@@ -186,7 +184,7 @@ class ConsoleReaderBase:
         finally:
             time.sleep(.1) 
             self.send_to_host(self.readConsoleToCursor())
-            time.sleep(1) 
+            time.sleep(.1)
             self.close_connection()
             
     def write(self, s):
