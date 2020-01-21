@@ -87,11 +87,13 @@ def init_logger():
         logger_filename = f'{logger_filename}.log'
         os.makedirs(os.path.dirname(logger_filename), exist_ok=True)
         fh = logging.FileHandler(logger_filename, 'w', 'utf-8')
-        formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
         logger.addHandler(fh)
     except KeyError:
         logger.setLevel(logging.ERROR)
+        
+init_logger()
 
 class ConsoleReaderBase:
     """Consol class (aka. client-side python class) for the child.
@@ -121,7 +123,6 @@ class ConsoleReaderBase:
         self.local_echo = True
         self.pid = os.getpid() 
         
-        init_logger()
         logger.info("ConsoleReader started")
         
         if cp:
@@ -141,43 +142,11 @@ class ConsoleReaderBase:
                 self.__childProcess, _, childPid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
                                                                              0, None, None, si)
                 
-            except Exception as e:
-                logger.info(e)
+            except:
+                logger.info(traceback.format_exc())
                 return
                   
-            paused = False
-   
-            while True:
-                consinfo = self.consout.GetConsoleScreenBufferInfo()
-                cursorPos = consinfo['CursorPosition']
-                self.send_to_host(self.readConsoleToCursor())
-                s = self.get_from_host()
-                self.write(s)
-                
-                if win32process.GetExitCodeProcess(self.__childProcess) != win32con.STILL_ACTIVE:
-                    time.sleep(.1)
-                    try:
-                        win32process.TerminateProcess(self.__childProcess, 0)
-                    except pywintypes.error as e:
-                        """ 'Access denied' happens always? Perhaps if not running as admin (or UAC
-                        enabled under Vista/7). Don't log. Child process will exit regardless when 
-                        calling sys.exit
-                        """
-                        if e.args[0] != winerror.ERROR_ACCESS_DENIED:
-                            logger.info(e)
-                    return
-                
-                if cursorPos.Y > maxconsoleY and not paused:
-                    logger.info('cursorPos %s' % cursorPos)
-                    self.suspendThread()
-                    paused = True
-                    
-                if cursorPos.Y <= maxconsoleY and paused:
-                    logger.info('cursorPos %s' % cursorPos)
-                    self.resumeThread()
-                    paused = False
-                                    
-                time.sleep(.1)
+            self.read_loop()
         except:
             logger.error(traceback.format_exc())
             time.sleep(.1)
@@ -186,6 +155,44 @@ class ConsoleReaderBase:
             self.send_to_host(self.readConsoleToCursor())
             time.sleep(.1)
             self.close_connection()
+            logger.info('Console finished.')
+            
+    def read_loop(self):
+        paused = False
+        
+        while True:
+            consinfo = self.consout.GetConsoleScreenBufferInfo()
+            cursorPos = consinfo['CursorPosition']
+            self.send_to_host(self.readConsoleToCursor())
+            s = self.get_from_host()
+            self.write(s)
+            
+            if win32process.GetExitCodeProcess(self.__childProcess) != win32con.STILL_ACTIVE:
+                logger.info('Child finished.')
+                time.sleep(.1)
+                try:
+                    win32process.TerminateProcess(self.__childProcess, 0)
+                except pywintypes.error as e:
+                    """ 'Access denied' happens always? Perhaps if not running as admin (or UAC
+                    enabled under Vista/7). Don't log. Child process will exit regardless when 
+                    calling sys.exit
+                    """
+                    if e.args[0] != winerror.ERROR_ACCESS_DENIED:
+                        logger.info(e)
+                return
+            
+            if cursorPos.Y > maxconsoleY and not paused:
+                logger.info('cursorPos %s' % cursorPos)
+                self.suspendThread()
+                paused = True
+                
+            if cursorPos.Y <= maxconsoleY and paused:
+                logger.info('cursorPos %s' % cursorPos)
+                self.resumeThread()
+                paused = False
+                                
+            time.sleep(.1)
+        
             
     def write(self, s):
         """Writes input into the child consoles input buffer."""
@@ -416,6 +423,7 @@ class ConsoleReaderSocket(ConsoleReaderBase):
             logger.info(f'Socket started at port: {self.port}')
             
             # Listen for incoming connections
+            self.sock.settimeout(5)
             self.sock.listen(1)
             self.connection, client_address = self.sock.accept()
             self.connection.settimeout(.2)
@@ -469,7 +477,7 @@ class ConsoleReaderPipe(ConsoleReaderBase):
         
     def close_connection(self):
         if self.pipe:
-            raise Exception(f'Unimplemented close')
+            win32file.CloseHandle(self.pipe)
         
     def send_to_host(self, msg):
         # convert to bytes
@@ -477,8 +485,12 @@ class ConsoleReaderPipe(ConsoleReaderBase):
         win32file.WriteFile(self.pipe, msg_bytes)
     
     def get_from_host(self):
-        resp = win32file.ReadFile(self.pipe, 64*1024)
-        ret = resp[1]
-        return ret
+        _, _, avail = win32pipe.PeekNamedPipe(self.pipe, 4096)
+        if avail > 0:
+            resp = win32file.ReadFile(self.pipe, 4096)
+            ret = resp[1]
+            return ret
+        else:
+            return ''
         
          
