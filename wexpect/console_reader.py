@@ -72,16 +72,24 @@ except: # pragma: no cover
 # console manipulation.
 #
 logger = logging.getLogger('wexpect')
-os.environ['WEXPECT_LOGGER_LEVEL'] = 'DEBUG'
-try:
-    logger_level = os.environ['WEXPECT_LOGGER_LEVEL']
-    logger.setLevel(logger_level)
-    fh = logging.FileHandler('wexpect.log', 'w', 'utf-8')
-    formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-except KeyError:
-    logger.setLevel(logging.ERROR)
+
+def init_logger():
+    logger = logging.getLogger('wexpect')
+    os.environ['WEXPECT_LOGGER_LEVEL'] = 'DEBUG'
+    try:
+        logger_level = os.environ['WEXPECT_LOGGER_LEVEL']
+        try:
+            logger_filename = os.environ['WEXPECT_LOGGER_FILENAME']
+        except KeyError:
+            pid = os.getpid()
+            logger_filename = f'wexpect_{pid}'
+        logger.setLevel(logger_level)
+        fh = logging.FileHandler(f'{logger_filename}.log', 'w', 'utf-8')
+        formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+    except KeyError:
+        logger.setLevel(logging.ERROR)
 
 class ConsoleReaderBase:
     """Consol class (aka. client-side python class) for the child.
@@ -109,7 +117,9 @@ class ConsoleReaderBase:
         self.consin = None
         self.consout = None
         self.local_echo = True
+        self.pid = os.getpid() 
         
+        init_logger()
         logger.info("ConsoleReader started")
         
         if cp:
@@ -129,13 +139,8 @@ class ConsoleReaderBase:
                 self.__childProcess, _, childPid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
                                                                              0, None, None, si)
                 
-                print('123')
-                print('456')
-                print('789')
-                                                                             
             except Exception as e:
                 logger.info(e)
-                time.sleep(.1)
                 return
             
             time.sleep(.2)
@@ -162,10 +167,6 @@ class ConsoleReaderBase:
                         """
                         if e.args[0] != winerror.ERROR_ACCESS_DENIED:
                             logger.info(e)
-                           
-                    time.sleep(.1) 
-                    self.send_to_host(self.readConsoleToCursor())
-                    time.sleep(.1) 
                     return
                 
                 if cursorPos.Y > maxconsoleY and not paused:
@@ -183,6 +184,9 @@ class ConsoleReaderBase:
             logger.error(traceback.format_exc())
             time.sleep(.1)
         finally:
+            time.sleep(.1) 
+            self.send_to_host(self.readConsoleToCursor())
+            time.sleep(1) 
             self.close_connection()
             
     def write(self, s):
@@ -405,19 +409,22 @@ class ConsoleReaderSocket(ConsoleReaderBase):
     
         
     def create_connection(self, **kwargs):
-        
-        self.port = kwargs['port']
-        # Create a TCP/IP socket
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_address = ('localhost', self.port)
-        self.sock.bind(server_address)
-        logger.info(f'Socket started at port: {self.port}')
-        
-        # Listen for incoming connections
-        self.sock.listen(1)
-        self.connection, client_address = self.sock.accept()
-        self.connection.settimeout(.2)
-        logger.info(f'Client connected: {client_address}')
+        try:        
+            self.port = kwargs['port']
+            # Create a TCP/IP socket
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_address = ('localhost', self.port)
+            self.sock.bind(server_address)
+            logger.info(f'Socket started at port: {self.port}')
+            
+            # Listen for incoming connections
+            self.sock.listen(1)
+            self.connection, client_address = self.sock.accept()
+            self.connection.settimeout(.2)
+            logger.info(f'Client connected: {client_address}')
+        except:
+            logger.error(f"Port: {self.port}")
+            raise
             
     def close_connection(self):
         if self.connection:
@@ -449,9 +456,8 @@ class ConsoleReaderSocket(ConsoleReaderBase):
     
     
 class ConsoleReaderPipe(ConsoleReaderBase):
-    def create_connection(self):
-        pid = win32process.GetCurrentProcessId()
-        pipe_name = 'wexpect_{}'.format(pid)
+    def create_connection(self, **kwargs):
+        pipe_name = 'wexpect_{}'.format(self.pid)
         pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
         logger.info('Start pipe server: %s', pipe_full_path)
         self.pipe = win32pipe.CreateNamedPipe(

@@ -150,9 +150,9 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
     dictionary passed to a callback. """
 
     if timeout == -1:
-        child = Spawn(command, maxread=2000, logfile=logfile, cwd=cwd, env=env)
+        child = SpawnSocket(command, maxread=2000, logfile=logfile, cwd=cwd, env=env)
     else:
-        child = Spawn(command, timeout=timeout, maxread=2000, logfile=logfile, cwd=cwd, env=env)
+        child = SpawnSocket(command, timeout=timeout, maxread=2000, logfile=logfile, cwd=cwd, env=env)
     if events is not None:
         patterns = list(events.keys())
         responses = list(events.values())
@@ -194,7 +194,7 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
         return child_result
 
       
-class Spawn:
+class SpawnBase:
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
         logfile=None, cwd=None, env=None, codepage=None, echo=True):
         """This starts the given command in a child process. This does all the
@@ -271,7 +271,7 @@ class Spawn:
         self.closed = False
         
         self.child_fd = self.startChild(self.args, self.env)
-        self.connect_to_child('localhost', 4321)
+        self.connect_to_child()
         
     def __del__(self):
         """This makes sure that no system resources are left open. Python only
@@ -391,36 +391,9 @@ class Spawn:
         return self
 
     def read_nonblocking (self, size = 1):
-        """This reads at most size characters from the child application. If
-        the end of file is read then an EOF exception will be raised.
-
-        This is not effected by the 'size' parameter, so if you call
-        read_nonblocking(size=100, timeout=30) and only one character is
-        available right away then one character will be returned immediately.
-        It will not wait for 30 seconds for another 99 characters to come in.
-
-        This is a wrapper around Wtty.read(). """
-
-        if self.closed:
-            raise ValueError ('I/O operation on closed file in read_nonblocking().')
-        
-        try:
-            # The real child and it's console are two different process. The console dies 0.1 sec
-            # later to be able to read the child's last output (before EOF). So here we check
-            # isalive() (which checks the real child.) and try a last read on the console. To catch
-            # the last output.
-            # The flag_child_finished flag shows that this is the second trial, where we raise the EOF.
-            if self.flag_child_finished:
-                raise EOF('self.flag_child_finished')
-            if not self.isalive():
-                self.flag_child_finished = True
-                
-            s = self.sock.recv(size)
-        except EOF:
-            self.flag_eof = True
-            raise
-
-        return s.decode()
+        """Virtual definition
+        """
+        raise NotImplementedError
 
     def __next__ (self):    # File-like object.
 
@@ -455,101 +428,12 @@ class Spawn:
         """The child is always created with a console."""
         
         return True
-
-                
-    def pipe_client(self, conpid):
-        pipe_name = 'wexpect_{}'.format(conpid)
-        pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
-        print('Trying to connect to pipe: {}'.format(pipe_full_path))
-        quit = False
     
-        while not quit:
-            try:
-                handle = win32file.CreateFile(
-                    pipe_full_path,
-                    win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                    0,
-                    None,
-                    win32file.OPEN_EXISTING,
-                    0,
-                    None
-                )
-                print("pipe found!")
-                res = win32pipe.SetNamedPipeHandleState(handle, win32pipe.PIPE_READMODE_MESSAGE, None, None)
-                if res == 0:
-                    print(f"SetNamedPipeHandleState return code: {res}")
-                while True:
-                    resp = win32file.ReadFile(handle, 64*1024)
-                    print(f"message: {resp}")
-                    win32file.WriteFile(handle, b'back')
-            except pywintypes.error as e:
-                if e.args[0] == winerror.ERROR_FILE_NOT_FOUND:  #2
-                    print("no pipe, trying again in a bit later")
-                    time.sleep(0.2)
-                elif e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
-                    print("broken pipe, bye bye")
-                    quit = True
-                elif e.args[0] == winerror.ERROR_NO_DATA:
-                    '''232 (0xE8)
-                    The pipe is being closed.
-                    '''
-                    print("The pipe is being closed.")
-                    quit = True
-                else:
-                    raise
-                    
-         
-    def connect_to_child(self, host, port):         
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((host, port))
+    def kill(self, sig):
+        """Sig == sigint for ctrl-c otherwise the child is terminated."""
+        os.kill(self.conpid, sig)
         
-    def disconnect_from_child(self):
-        if self.sock:
-            self.sock.close()
-
-
-    def startChild(self, args, env):
-        si = win32process.GetStartupInfo()
-        si.dwFlags = win32process.STARTF_USESHOWWINDOW
-        si.wShowWindow = win32con.SW_HIDE
-    
-        dirname = os.path.dirname(sys.executable 
-                                  if getattr(sys, 'frozen', False) else 
-                                  os.path.abspath(__file__))
-        spath = [os.path.dirname(dirname)]
-        pyargs = ['-c']
-        if getattr(sys, 'frozen', False):
-            # If we are running 'frozen', add library.zip and lib\library.zip
-            # to sys.path
-            # py2exe: Needs appropriate 'zipfile' option in setup script and 
-            # 'bundle_files' 3
-            spath.append(os.path.join(dirname, 'library.zip'))
-            spath.append(os.path.join(dirname, 'library.zip', 
-                                      os.path.basename(os.path.splitext(sys.executable)[0])))
-            if os.path.isdir(os.path.join(dirname, 'lib')):
-                dirname = os.path.join(dirname, 'lib')
-                spath.append(os.path.join(dirname, 'library.zip'))
-                spath.append(os.path.join(dirname, 'library.zip', 
-                                          os.path.basename(os.path.splitext(sys.executable)[0])))
-            pyargs.insert(0, '-S')  # skip 'import site'
-        
-        
-        pid = win32process.GetCurrentProcessId()
-        
-        commandLine = '"%s" %s "%s"' % (os.path.join(dirname, 'python.exe') 
-                                        if getattr(sys, 'frozen', False) else 
-                                        os.path.join(os.path.dirname(sys.executable), 'python.exe'), 
-                                        ' '.join(pyargs), 
-                                        "import sys;"
-                                        f"sys.path = {spath} + sys.path;"
-                                        "import wexpect;"
-                                        "import time;"
-                                        f"wexpect.ConsoleReaderSocket(wexpect.join_args({args}), {pid}, port=4321);"
-                                        )
-        
-        self.conproc, _, conpid, __otid = win32process.CreateProcess(None, commandLine, None, None, False, 
-                                                        win32process.CREATE_NEW_CONSOLE, None, None, si)
-        
+#        win32api.TerminateProcess(self.conproc, 1)
        
     def isalive(self, console=True):
         """True if the child is still alive, false otherwise"""
@@ -600,16 +484,21 @@ class Spawn:
         # platform does not define VEOF so assume CTRL-D
         char = chr(4)
         self.send(char)
-
-    def send(self, s):
-        """This sends a string to the child process. This returns the number of
-        bytes written. If a log file was set then the data is also written to
-        the log. """
         
-        time.sleep(self.delaybeforesend)
-        self.sock.sendall(s)
-        return len(s)
-    
+    def send(self):
+        """Virtual definition
+        """
+        raise NotImplementedError
+         
+    def connect_to_child(self):
+        """Virtual definition
+        """
+        raise NotImplementedError
+        
+    def disconnect_from_child(self):
+        """Virtual definition
+        """
+        raise NotImplementedError
     
     def compile_pattern_list(self, patterns):
 
@@ -846,6 +735,167 @@ class Spawn:
             self.match_index = None
             raise
 
+class SpawnPipe(SpawnBase):
+    
+
+                
+    def pipe_client(self, conpid):
+        pipe_name = 'wexpect_{}'.format(conpid)
+        pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
+        print('Trying to connect to pipe: {}'.format(pipe_full_path))
+        quit = False
+    
+        while not quit:
+            try:
+                handle = win32file.CreateFile(
+                    pipe_full_path,
+                    win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                    0,
+                    None,
+                    win32file.OPEN_EXISTING,
+                    0,
+                    None
+                )
+                print("pipe found!")
+                res = win32pipe.SetNamedPipeHandleState(handle, win32pipe.PIPE_READMODE_MESSAGE, None, None)
+                if res == 0:
+                    print(f"SetNamedPipeHandleState return code: {res}")
+                while True:
+                    resp = win32file.ReadFile(handle, 64*1024)
+                    print(f"message: {resp}")
+                    win32file.WriteFile(handle, b'back')
+            except pywintypes.error as e:
+                if e.args[0] == winerror.ERROR_FILE_NOT_FOUND:  #2
+                    print("no pipe, trying again in a bit later")
+                    time.sleep(0.2)
+                elif e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
+                    print("broken pipe, bye bye")
+                    quit = True
+                elif e.args[0] == winerror.ERROR_NO_DATA:
+                    '''232 (0xE8)
+                    The pipe is being closed.
+                    '''
+                    print("The pipe is being closed.")
+                    quit = True
+                else:
+                    raise
+                    
+    def send(self, s):
+        """This sends a string to the child process. This returns the number of
+        bytes written. If a log file was set then the data is also written to
+        the log. """
+        if isinstance(s, str):
+            s = str.encode(s)
+        if self.delaybeforesend:
+            time.sleep(self.delaybeforesend)
+        self.sock.sendall(s)
+        return len(s)
+    
+    
+class SpawnSocket(SpawnBase):
+    
+    def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
+        logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321, host='localhost'):
+        self.port = port
+        self.host = host
+        super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
+             searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo)
+        
+    
+    def send(self, s):
+        """This sends a string to the child process. This returns the number of
+        bytes written. If a log file was set then the data is also written to
+        the log. """
+        if isinstance(s, str):
+            s = str.encode(s)
+        if self.delaybeforesend:
+            time.sleep(self.delaybeforesend)
+        self.sock.sendall(s)
+        return len(s)
+         
+    def connect_to_child(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((self.host, self.port))
+        
+    def disconnect_from_child(self):
+        if self.sock:
+            self.sock.close()
+
+    def read_nonblocking (self, size = 1):
+        """This reads at most size characters from the child application. If
+        the end of file is read then an EOF exception will be raised.
+
+        This is not effected by the 'size' parameter, so if you call
+        read_nonblocking(size=100, timeout=30) and only one character is
+        available right away then one character will be returned immediately.
+        It will not wait for 30 seconds for another 99 characters to come in.
+
+        This is a wrapper around Wtty.read(). """
+
+        if self.closed:
+            raise ValueError ('I/O operation on closed file in read_nonblocking().')
+        
+        try:
+            # The real child and it's console are two different process. The console dies 0.1 sec
+            # later to be able to read the child's last output (before EOF). So here we check
+            # isalive() (which checks the real child.) and try a last read on the console. To catch
+            # the last output.
+            # The flag_child_finished flag shows that this is the second trial, where we raise the EOF.
+            if self.flag_child_finished:
+                raise EOF('self.flag_child_finished')
+            if not self.isalive():
+                self.flag_child_finished = True
+                
+            s = self.sock.recv(size)
+        except EOF:
+            self.flag_eof = True
+            raise
+
+        return s.decode()
+
+    def startChild(self, args, env):
+        si = win32process.GetStartupInfo()
+        si.dwFlags = win32process.STARTF_USESHOWWINDOW
+        si.wShowWindow = win32con.SW_HIDE
+    
+        dirname = os.path.dirname(sys.executable 
+                                  if getattr(sys, 'frozen', False) else 
+                                  os.path.abspath(__file__))
+        spath = [os.path.dirname(dirname)]
+        pyargs = ['-c']
+        if getattr(sys, 'frozen', False):
+            # If we are running 'frozen', add library.zip and lib\library.zip
+            # to sys.path
+            # py2exe: Needs appropriate 'zipfile' option in setup script and 
+            # 'bundle_files' 3
+            spath.append(os.path.join(dirname, 'library.zip'))
+            spath.append(os.path.join(dirname, 'library.zip', 
+                                      os.path.basename(os.path.splitext(sys.executable)[0])))
+            if os.path.isdir(os.path.join(dirname, 'lib')):
+                dirname = os.path.join(dirname, 'lib')
+                spath.append(os.path.join(dirname, 'library.zip'))
+                spath.append(os.path.join(dirname, 'library.zip', 
+                                          os.path.basename(os.path.splitext(sys.executable)[0])))
+            pyargs.insert(0, '-S')  # skip 'import site'
+        
+        
+        pid = win32process.GetCurrentProcessId()
+        
+        commandLine = '"%s" %s "%s"' % (os.path.join(dirname, 'python.exe') 
+                                        if getattr(sys, 'frozen', False) else 
+                                        os.path.join(os.path.dirname(sys.executable), 'python.exe'), 
+                                        ' '.join(pyargs), 
+                                        "import sys;"
+                                        f"sys.path = {spath} + sys.path;"
+                                        "import wexpect;"
+                                        "import time;"
+                                        f"wexpect.ConsoleReaderSocket(wexpect.join_args({args}), {pid}, port={self.port});"
+                                        )
+        
+        self.conproc, _, self.conpid, __otid = win32process.CreateProcess(None, commandLine, None, None, False, 
+                                                        win32process.CREATE_NEW_CONSOLE, None, None, si)
+
+    
 
 class searcher_re (object):
 
@@ -938,7 +988,7 @@ class searcher_re (object):
         
 def main():
     try:
-        p = Spawn('cmd')
+        p = SpawnSocket('cmd')
         
         p.sendline(b'ls')
         time.sleep(.5)

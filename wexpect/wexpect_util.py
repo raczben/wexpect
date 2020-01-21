@@ -38,21 +38,62 @@ Wexpect Copyright (c) 2019 Benedek Racz
 """
 
 import re
-import ctypes
 import traceback
 import sys
 
-def split_command_line(command_line):
-    '''https://stackoverflow.com/a/35900070/2506522
-    '''
-    
-    nargs = ctypes.c_int()
-    ctypes.windll.shell32.CommandLineToArgvW.restype = ctypes.POINTER(ctypes.c_wchar_p)
-    lpargs = ctypes.windll.shell32.CommandLineToArgvW(command_line, ctypes.byref(nargs))
-    args = [lpargs[i] for i in range(nargs.value)]
-    if ctypes.windll.kernel32.LocalFree(lpargs):
-        raise AssertionError
-    return args
+def split_command_line(command_line, escape_char = '^'):
+    """This splits a command line into a list of arguments. It splits arguments
+    on spaces, but handles embedded quotes, doublequotes, and escaped
+    characters. It's impossible to do this with a regular expression, so I
+    wrote a little state machine to parse the command line. """
+
+    arg_list = []
+    arg = ''
+
+    # Constants to name the states we can be in.
+    state_basic = 0
+    state_esc = 1
+    state_singlequote = 2
+    state_doublequote = 3
+    state_whitespace = 4 # The state of consuming whitespace between commands.
+    state = state_basic
+
+    for c in command_line:
+        if state == state_basic or state == state_whitespace:
+            if c == escape_char: # Escape the next character
+                state = state_esc
+            elif c == r"'": # Handle single quote
+                state = state_singlequote
+            elif c == r'"': # Handle double quote
+                state = state_doublequote
+            elif c.isspace():
+                # Add arg to arg_list if we aren't in the middle of whitespace.
+                if state == state_whitespace:
+                    None # Do nothing.
+                else:
+                    arg_list.append(arg)
+                    arg = ''
+                    state = state_whitespace
+            else:
+                arg = arg + c
+                state = state_basic
+        elif state == state_esc:
+            arg = arg + c
+            state = state_basic
+        elif state == state_singlequote:
+            if c == r"'":
+                state = state_basic
+            else:
+                arg = arg + c
+        elif state == state_doublequote:
+            if c == r'"':
+                state = state_basic
+            else:
+                arg = arg + c
+
+    if arg != '':
+        arg_list.append(arg)
+    return arg_list
 
 def join_args(args):
     """Joins arguments into a command line. It quotes all arguments that contain
