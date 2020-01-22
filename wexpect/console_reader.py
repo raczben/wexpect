@@ -42,6 +42,7 @@ import logging
 import os
 import traceback
 import pkg_resources 
+import psutil
 from io import StringIO
 
 import ctypes
@@ -53,6 +54,8 @@ import win32file
 import winerror
 import win32pipe
 import socket
+
+from .wexpect_util import init_logger
 
 # 
 # System-wide constants
@@ -72,28 +75,8 @@ except: # pragma: no cover
 # console manipulation.
 #
 logger = logging.getLogger('wexpect')
-
-def init_logger():
-    logger = logging.getLogger('wexpect')
-    os.environ['WEXPECT_LOGGER_LEVEL'] = 'DEBUG'
-    try:
-        logger_level = os.environ['WEXPECT_LOGGER_LEVEL']
-        try:
-            logger_filename = os.environ['WEXPECT_LOGGER_FILENAME']
-        except KeyError:
-            pid = os.getpid()
-            logger_filename = f'./.wlog/wexpect_{pid}'
-        logger.setLevel(logger_level)
-        logger_filename = f'{logger_filename}.log'
-        os.makedirs(os.path.dirname(logger_filename), exist_ok=True)
-        fh = logging.FileHandler(logger_filename, 'w', 'utf-8')
-        formatter = logging.Formatter('%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
-        fh.setFormatter(formatter)
-        logger.addHandler(fh)
-    except KeyError:
-        logger.setLevel(logging.ERROR)
         
-init_logger()
+init_logger(logger)
 
 class ConsoleReaderBase:
     """Consol class (aka. client-side python class) for the child.
@@ -101,7 +84,7 @@ class ConsoleReaderBase:
     This class initialize the console starts the child in it and reads the console periodically.
     """
 
-    def __init__(self, path, parent_pid, cp=None, window_size_x=80, window_size_y=25,
+    def __init__(self, path, host_pid, cp=None, window_size_x=80, window_size_y=25,
                  buffer_size_x=80, buffer_size_y=16000, **kwargs):
         """Initialize the console starts the child in it and reads the console periodically.        
 
@@ -121,7 +104,9 @@ class ConsoleReaderBase:
         self.consin = None
         self.consout = None
         self.local_echo = True
-        self.pid = os.getpid() 
+        self.console_pid = os.getpid()
+        self.host_pid = host_pid
+        self.host_process = psutil.Process(host_pid)
         
         logger.info("ConsoleReader started")
         
@@ -151,6 +136,7 @@ class ConsoleReaderBase:
             logger.error(traceback.format_exc())
             time.sleep(.1)
         finally:
+            self.terminate_child()
             time.sleep(.1) 
             self.send_to_host(self.readConsoleToCursor())
             time.sleep(.1)
@@ -161,25 +147,19 @@ class ConsoleReaderBase:
         paused = False
         
         while True:
+            if not self.isalive(self.host_process):
+                logger.info('Host process has been died.')
+                return
+                
+            if win32process.GetExitCodeProcess(self.__childProcess) != win32con.STILL_ACTIVE:
+                logger.info('Child finished.')
+                return
+            
             consinfo = self.consout.GetConsoleScreenBufferInfo()
             cursorPos = consinfo['CursorPosition']
             self.send_to_host(self.readConsoleToCursor())
             s = self.get_from_host()
             self.write(s)
-            
-            if win32process.GetExitCodeProcess(self.__childProcess) != win32con.STILL_ACTIVE:
-                logger.info('Child finished.')
-                time.sleep(.1)
-                try:
-                    win32process.TerminateProcess(self.__childProcess, 0)
-                except pywintypes.error as e:
-                    """ 'Access denied' happens always? Perhaps if not running as admin (or UAC
-                    enabled under Vista/7). Don't log. Child process will exit regardless when 
-                    calling sys.exit
-                    """
-                    if e.args[0] != winerror.ERROR_ACCESS_DENIED:
-                        logger.info(e)
-                return
             
             if cursorPos.Y > maxconsoleY and not paused:
                 logger.info('cursorPos %s' % cursorPos)
@@ -192,7 +172,27 @@ class ConsoleReaderBase:
                 paused = False
                                 
             time.sleep(.1)
+            
+    def terminate_child(self):
+        try:
+            win32process.TerminateProcess(self.__childProcess, 0)
+        except pywintypes.error as e:
+            """ 'Access denied' happens always? Perhaps if not running as admin (or UAC
+            enabled under Vista/7). Don't log. Child process will exit regardless when 
+            calling sys.exit
+            """
+            # if e.args[0] != winerror.ERROR_ACCESS_DENIED:
+            logger.info(e)
+        return
         
+       
+    def isalive(self, process):
+        """True if the child is still alive, false otherwise"""
+        try:
+            process.wait(timeout=0)
+            return False
+        except psutil.TimeoutExpired:
+            return True
             
     def write(self, s):
         """Writes input into the child consoles input buffer."""
@@ -439,6 +439,7 @@ class ConsoleReaderSocket(ConsoleReaderBase):
     def send_to_host(self, msg):
         # convert to bytes
         msg_bytes = str.encode(msg)
+        logger.debug(f'Sending msg: {msg_bytes}')
         self.connection.sendall(msg_bytes)
         
     def get_from_host(self):
@@ -482,6 +483,7 @@ class ConsoleReaderPipe(ConsoleReaderBase):
     def send_to_host(self, msg):
         # convert to bytes
         msg_bytes = str.encode(msg)
+        logger.debug(f'Sending msg: {msg_bytes}')
         win32file.WriteFile(self.pipe, msg_bytes)
     
     def get_from_host(self):

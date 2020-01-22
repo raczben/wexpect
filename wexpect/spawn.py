@@ -73,23 +73,29 @@ import traceback
 import types
 import psutil
 import signal
+import socket
+import logging
 
 import pywintypes
 import win32process
 import win32con
-import win32api
 import win32file
 import winerror
 import win32pipe
-import socket
 
 from .wexpect_util import ExceptionPexpect
 from .wexpect_util import EOF
 from .wexpect_util import TIMEOUT
 from .wexpect_util import split_command_line
+from .wexpect_util import init_logger
+
+logger = logging.getLogger('wexpect')
+        
+init_logger(logger)
 
 
-def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None, logfile=None, cwd=None, env=None):
+def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None, logfile=None,
+         cwd=None, env=None, **kwargs):
 
     """
     This function runs the given command; waits for it to finish; then
@@ -152,9 +158,9 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
     dictionary passed to a callback. """
 
     if timeout == -1:
-        child = SpawnSocket(command, maxread=2000, logfile=logfile, cwd=cwd, env=env)
+        child = SpawnSocket(command, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
     else:
-        child = SpawnSocket(command, timeout=timeout, maxread=2000, logfile=logfile, cwd=cwd, env=env)
+        child = SpawnSocket(command, timeout=timeout, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
     if events is not None:
         patterns = list(events.keys())
         responses = list(events.values())
@@ -198,7 +204,7 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
       
 class SpawnBase:
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
-        logfile=None, cwd=None, env=None, codepage=None, echo=True, **kwargs):
+        logfile=None, cwd=None, env=None, codepage=None, echo=True, safe_exit=True, **kwargs):
         """This starts the given command in a child process. This does all the
         fork/exec type of stuff for a pty. This is called by __init__. If args
         is empty then command will be parsed (split on spaces) and args will be
@@ -218,6 +224,7 @@ class SpawnBase:
         self.child_process = None
         self.child_pid = None
         
+        self.safe_exit = safe_exit
         self.searcher = None
         self.ignorecase = False
         self.before = None
@@ -260,25 +267,19 @@ class SpawnBase:
             
         command_with_path = shutil.which(self.command)
         if command_with_path is None:
-           raise ExceptionPexpect ('The command was not found or was not executable: %s.' % self.command)
+            logger.warning('The command was not found or was not executable: %s.' % self.command)
+            raise ExceptionPexpect ('The command was not found or was not executable: %s.' % self.command)
         self.command = command_with_path
         self.args[0] = self.command
 
         self.name = '<' + ' '.join (self.args) + '>'      
-    
-        if self.cwd is not None:
-            os.chdir(self.cwd)
-        
-        
-        if self.cwd is not None:
-            # Restore the original working dir
-            os.chdir(self.ocwd)
             
         self.terminated = False
         self.closed = False
         
         self.child_fd = self.startChild(self.args, self.env)
         self.get_child_process()
+        logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
         self.connect_to_child()
         
     def __del__(self):
@@ -288,6 +289,8 @@ class SpawnBase:
         try:
             self.terminate()
             self.disconnect_from_child()
+            if self.safe_exit:
+                self.wait()
         except:
             traceback.print_exc()
            
@@ -370,7 +373,10 @@ class SpawnBase:
     
     def kill(self, sig=signal.SIGTERM):
         """Sig == sigint for ctrl-c otherwise the child is terminated."""
-        self.child_process.send_signal(sig)
+        try:
+            self.child_process.send_signal(sig)
+        except psutil._exceptions.NoSuchProcess as e:
+            logger.info('Child has already died. %s', e)
     
     def wait(self, child=True, console=True):
         if child:
@@ -766,7 +772,7 @@ class SpawnPipe(SpawnBase):
     def connect_to_child(self):
         pipe_name = 'wexpect_{}'.format(self.console_pid)
         pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
-#        print('Trying to connect to pipe: {}'.format(pipe_full_path))
+        logger.debug(f'Trying to connect to pipe: {pipe_full_path}')
         while True:
             try:
                 self.pipe = win32file.CreateFile(
@@ -778,14 +784,14 @@ class SpawnPipe(SpawnBase):
                     0,
                     None
                 )
-#                print("pipe found!")
+                logger.debug('Pipe found')
                 res = win32pipe.SetNamedPipeHandleState(self.pipe, win32pipe.PIPE_READMODE_MESSAGE, None, None)
-#                if res == 0:
-#                    print(f"SetNamedPipeHandleState return code: {res}")
+                if res == 0:
+                    logger.debug(f"SetNamedPipeHandleState return code: {res}")
                 return
             except pywintypes.error as e:
                 if e.args[0] == winerror.ERROR_FILE_NOT_FOUND:  #2
-#                    print("no pipe, trying again in a bit later")
+                    logger.debug("no pipe, trying again in a bit later")
                     time.sleep(0.2)
                 else:
                     raise
@@ -806,6 +812,7 @@ class SpawnPipe(SpawnBase):
         This is a wrapper around Wtty.read(). """
 
         if self.closed:
+            logger.info('I/O operation on closed file in read_nonblocking().')
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
         
         try:
@@ -815,22 +822,27 @@ class SpawnPipe(SpawnBase):
             # the last output.
             # The flag_child_finished flag shows that this is the second trial, where we raise the EOF.
             if self.flag_child_finished:
+                logger.info("EOF('self.flag_child_finished')")
                 raise EOF('self.flag_child_finished')
             if not self.isalive():
                 self.flag_child_finished = True
+                logger.info('self.isalive() == False: Child has been died, lets do a last read!')
                 
             try:
                 s = win32file.ReadFile(self.pipe, size)[1]
+                logger.debug(f's: {s}')
                 return s.decode()
             except pywintypes.error as e:
                 if e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
                     self.flag_eof = True
+                    logger.info("EOF('broken pipe, bye bye')")
                     raise EOF('broken pipe, bye bye')
                 elif e.args[0] == winerror.ERROR_NO_DATA:
                     '''232 (0xE8)
                     The pipe is being closed.
                     '''
                     self.flag_eof = True
+                    logger.info("EOF('The pipe is being closed.')")
                     raise EOF('The pipe is being closed.')
                 else:
                     raise
@@ -905,6 +917,8 @@ class SpawnPipe(SpawnBase):
                                         "wexpect.console_reader.logger.info('Console finished2.');"
                                         )
         
+        logger.info(f'Console starter command:{commandLine}')
+        
         _, _, self.console_pid, __otid = win32process.CreateProcess(None, commandLine, None, None, False, 
                                                         win32process.CREATE_NEW_CONSOLE, None, None, si)
 
@@ -933,6 +947,7 @@ class SpawnSocket(SpawnBase):
     def connect_to_child(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((self.host, self.port))
+        self.sock.settimeout(.2)
         
     def disconnect_from_child(self):
         if self.sock:
@@ -951,6 +966,7 @@ class SpawnSocket(SpawnBase):
         This is a wrapper around Wtty.read(). """
 
         if self.closed:
+            logger.info('I/O operation on closed file in read_nonblocking().')
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
         
         try:
@@ -960,14 +976,20 @@ class SpawnSocket(SpawnBase):
             # the last output.
             # The flag_child_finished flag shows that this is the second trial, where we raise the EOF.
             if self.flag_child_finished:
+                logger.info("EOF('self.flag_child_finished')")
                 raise EOF('self.flag_child_finished')
             if not self.isalive():
                 self.flag_child_finished = True
+                logger.info('self.isalive() == False: Child has been died, lets do a last read!')
                 
+            logger.debug(f'Reading socket...')
             s = self.sock.recv(size)
+            logger.debug(f's: {s}')
         except EOF:
             self.flag_eof = True
             raise
+        except socket.timeout:
+            return ''
 
         return s.decode()
 
@@ -1011,6 +1033,8 @@ class SpawnSocket(SpawnBase):
                                         f"wexpect.ConsoleReaderSocket(wexpect.join_args({args}), {pid}, port={self.port});"
                                         "wexpect.console_reader.logger.info('Console finished2.');"
                                         )
+        
+        logger.info(f'Console starter command:{commandLine}')
         
         _, _, self.console_pid, __otid = win32process.CreateProcess(None, commandLine, None, None, False, 
                                                         win32process.CREATE_NEW_CONSOLE, None, None, si)

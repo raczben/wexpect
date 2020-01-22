@@ -40,6 +40,27 @@ Wexpect Copyright (c) 2019 Benedek Racz
 import re
 import traceback
 import sys
+import os
+import logging
+
+def init_logger(logger):
+    os.environ['WEXPECT_LOGGER_LEVEL'] = 'DEBUG'
+    try:
+        logger_level = os.environ['WEXPECT_LOGGER_LEVEL']
+        try:
+            logger_filename = os.environ['WEXPECT_LOGGER_FILENAME']
+        except KeyError:
+            pid = os.getpid()
+            logger_filename = f'./.wlog/wexpect_{pid}'
+        logger.setLevel(logger_level)
+        logger_filename = f'{logger_filename}.log'
+        os.makedirs(os.path.dirname(logger_filename), exist_ok=True)
+        fh = logging.FileHandler(logger_filename, 'w', 'utf-8')
+        formatter = logging.Formatter('%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+    except KeyError:
+        logger.setLevel(logging.ERROR)
 
 def split_command_line(command_line, escape_char = '^'):
     """This splits a command line into a list of arguments. It splits arguments
