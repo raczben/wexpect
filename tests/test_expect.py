@@ -267,7 +267,8 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
     def test_buffer_interface(self):
         p = wexpect.spawn('cat', timeout=5)
         p.sendline ('Hello')
-        p.expect ('Hello')
+        p.expect('Hello')
+        p.expect('lo')
         assert len(p.buffer)
         p.buffer = 'Testing'
         p.sendeof ()
