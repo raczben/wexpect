@@ -163,6 +163,10 @@ class ConsoleReaderBase:
             cursorPos = consinfo['CursorPosition']
             self.send_to_host(self.readConsoleToCursor())
             s = self.get_from_host()
+            if s:
+                logger.debug(f'get_from_host: {s}')
+            else:
+                logger.spam(f'get_from_host: {s}')
             self.write(s)
             
             if cursorPos.Y > maxconsoleY and not paused:
@@ -349,14 +353,14 @@ class ConsoleReaderBase:
         consinfo = self.consout.GetConsoleScreenBufferInfo()
         cursorPos = consinfo['CursorPosition']
         
-        logger.debug('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
+        logger.spam('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
 
         isSameX = cursorPos.X == self.__currentReadCo.X
         isSameY = cursorPos.Y == self.__currentReadCo.Y
         isSamePos = isSameX and isSameY
         
-        logger.debug('isSameY: %r' % isSameY)
-        logger.debug('isSamePos: %r' % isSamePos)
+        logger.spam('isSameY: %r' % isSameY)
+        logger.spam('isSamePos: %r' % isSamePos)
         
         if isSameY or not self.lastReadData.endswith('\r\n'):
             # Read the current slice again
@@ -364,7 +368,7 @@ class ConsoleReaderBase:
             self.__currentReadCo.X = 0
             self.__currentReadCo.Y = self.__bufferY
         
-        logger.debug('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
+        logger.spam('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
         
         raw = self.readConsole(self.__currentReadCo, cursorPos)
         rawlist = []
@@ -379,11 +383,14 @@ class ConsoleReaderBase:
                 self.__bufferY += len(rawlist) - i
                 break
         
-        logger.debug('lastReadData: %r' % self.lastReadData)
-        logger.debug('s: %r' % s)
+        logger.spam('lastReadData: %r' % self.lastReadData)
+        if s:
+            logger.debug('Read: %r' % s)
+        else:
+            logger.spam('Read: %r' % s)
         
         if isSamePos and self.lastReadData == s:
-            logger.debug('isSamePos and self.lastReadData == s')
+            logger.spam('isSamePos and self.lastReadData == s')
             s = ''
         
         if s:
@@ -450,7 +457,10 @@ class ConsoleReaderSocket(ConsoleReaderBase):
     def send_to_host(self, msg):
         # convert to bytes
         msg_bytes = str.encode(msg)
-        logger.debug(f'Sending msg: {msg_bytes}')
+        if msg_bytes:
+            logger.debug(f'Sending msg: {msg_bytes}')
+        else:
+            logger.spam(f'Sending msg: {msg_bytes}')
         self.connection.sendall(msg_bytes)
         
     def get_from_host(self):
@@ -475,7 +485,7 @@ class ConsoleReaderSocket(ConsoleReaderBase):
     
 class ConsoleReaderPipe(ConsoleReaderBase):
     def create_connection(self, **kwargs):
-        pipe_name = 'wexpect_{}'.format(self.pid)
+        pipe_name = 'wexpect_{}'.format(self.console_pid)
         pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
         logger.info('Start pipe server: %s', pipe_full_path)
         self.pipe = win32pipe.CreateNamedPipe(
@@ -494,11 +504,15 @@ class ConsoleReaderPipe(ConsoleReaderBase):
     def send_to_host(self, msg):
         # convert to bytes
         msg_bytes = str.encode(msg)
-        logger.debug(f'Sending msg: {msg_bytes}')
+        if msg_bytes:
+            logger.debug(f'Sending msg: {msg_bytes}')
+        else:
+            logger.spam(f'Sending msg: {msg_bytes}')
         win32file.WriteFile(self.pipe, msg_bytes)
     
     def get_from_host(self):
-        _, _, avail = win32pipe.PeekNamedPipe(self.pipe, 4096)
+        data, avail, bytes_left = win32pipe.PeekNamedPipe(self.pipe, 4096)
+        logger.spam(f'data: {data}  avail:{avail}  bytes_left{bytes_left}')
         if avail > 0:
             resp = win32file.ReadFile(self.pipe, 4096)
             ret = resp[1]

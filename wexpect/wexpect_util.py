@@ -43,6 +43,14 @@ import sys
 import os
 import logging
 
+SPAM = 5
+logging.addLevelName(SPAM, "SPAM")
+def spam(self, message, *args, **kws):
+    if self.isEnabledFor(SPAM):
+        # Yes, logger takes its '*args' as 'args'.
+        self._log(SPAM, message, args, **kws)
+logging.Logger.spam = spam
+
 def init_logger(logger):
     try:
         logger_level = os.environ['WEXPECT_LOGGER_LEVEL']

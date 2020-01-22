@@ -186,6 +186,7 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
                 elif callback_result:
                     break
             else:
+                logger.warning("TypeError ('The callback must be a string or function type.')")
                 raise TypeError ('The callback must be a string or function type.')
             event_count = event_count + 1
         except TIMEOUT:
@@ -244,7 +245,7 @@ class SpawnBase:
         self.env = env
         self.echo = echo
         self.maxread = maxread # max bytes to read at one time into buffer
-        self.delaybeforesend = 0.05 # Sets sleep time used just before sending data to child. Time in seconds.
+        self.delaybeforesend = 0.1 # Sets sleep time used just before sending data to child. Time in seconds.
         self.delayafterterminate = 0.1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
         self.flag_child_finished = False
         self.buffer = '' # This is the read buffer. See maxread.
@@ -254,9 +255,11 @@ class SpawnBase:
 
         # If command is an int type then it may represent a file descriptor.
         if type(command) == type(0):
-            raise ExceptionPexpect ('Command is an int type. If this is a file descriptor then maybe you want to use fdpexpect.fdspawn which takes an existing file descriptor instead of a command string.')
+            logger.warning("ExceptionPexpect('Command is an int type. If this is a file descriptor then maybe you want to use fdpexpect.fdspawn which takes an existing file descriptor instead of a command string.')")
+            raise ExceptionPexpect('Command is an int type. If this is a file descriptor then maybe you want to use fdpexpect.fdspawn which takes an existing file descriptor instead of a command string.')
 
         if type (args) != type([]):
+            logger.warning("TypeError ('The argument, args, must be a list.')")
             raise TypeError ('The argument, args, must be a list.')
    
         if args == []:
@@ -577,6 +580,7 @@ class SpawnBase:
             elif type(p) is type(re.compile('')):
                 compiled_pattern_list.append(p)
             else:
+                logger.warning("TypeError ('Argument must be one of StringTypes, EOF, TIMEOUT, SRE_Pattern, or a list of those type. %s' % str(type(p)))")
                 raise TypeError ('Argument must be one of StringTypes, EOF, TIMEOUT, SRE_Pattern, or a list of those type. %s' % str(type(p)))
 
         return compiled_pattern_list
@@ -694,6 +698,7 @@ class SpawnBase:
             
         for p in pattern_list:
             if type(p) not in (str,) and p not in (TIMEOUT, EOF):
+                logger.warning('Argument must be one of StringTypes, EOF, TIMEOUT, or a list of those type. %s' % str(type(p)))
                 raise TypeError ('Argument must be one of StringTypes, EOF, TIMEOUT, or a list of those type. %s' % str(type(p)))
             
         return self.expect_loop(searcher_string(pattern_list), timeout, searchwindowsize)
@@ -729,6 +734,7 @@ class SpawnBase:
                     return self.match_index
                 # No match at this point
                 if timeout is not None and end_time < time.time():
+                    logger.info('Timeout exceeded in expect_any().')
                     raise TIMEOUT ('Timeout exceeded in expect_any().')
                 # Still have time left, so read more data
                 c = self.read_nonblocking(self.maxread)
@@ -747,7 +753,8 @@ class SpawnBase:
             else:
                 self.match = None
                 self.match_index = None
-                raise EOF (str(e) + '\n' + str(self))
+                logger.info(f'EOF: {e}\n{self}')
+                raise EOF(f'{e}\n{self}')
         except TIMEOUT as e:
             self.buffer = incoming
             self.before = incoming
@@ -760,7 +767,8 @@ class SpawnBase:
             else:
                 self.match = None
                 self.match_index = None
-                raise TIMEOUT (str(e) + '\n' + str(self))
+                logger.info(f'TIMEOUT: {e}\n{self}')
+                raise TIMEOUT(f'{e}\n{self}')
         except:
             self.before = incoming
             self.after = None
@@ -814,7 +822,7 @@ class SpawnPipe(SpawnBase):
         This is a wrapper around Wtty.read(). """
 
         if self.closed:
-            logger.info('I/O operation on closed file in read_nonblocking().')
+            logger.warning('I/O operation on closed file in read_nonblocking().')
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
         
         try:
@@ -824,7 +832,7 @@ class SpawnPipe(SpawnBase):
             # the last output.
             # The flag_child_finished flag shows that this is the second trial, where we raise the EOF.
             if self.flag_child_finished:
-                logger.info("EOF('self.flag_child_finished')")
+                logger.info('EOF: self.flag_child_finished')
                 raise EOF('self.flag_child_finished')
             if not self.isalive():
                 self.flag_child_finished = True
@@ -832,7 +840,11 @@ class SpawnPipe(SpawnBase):
                 
             try:
                 s = win32file.ReadFile(self.pipe, size)[1]
-                logger.debug(f's: {s}')
+                
+                if s:
+                    logger.debug(f'Readed: {s}')
+                else:
+                    logger.spam(f'Readed: {s}')
                 return s.decode()
             except pywintypes.error as e:
                 if e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
@@ -861,19 +873,20 @@ class SpawnPipe(SpawnBase):
         if self.delaybeforesend:
             time.sleep(self.delaybeforesend)
         try:
-            while True:
-                win32file.WriteFile(self.pipe, b'back')
+            if s:
+                logger.debug(f"Writing: {s}")
+            win32file.WriteFile(self.pipe, s)
+            logger.spam(f"WriteFile finished.")
         except pywintypes.error as e:
-            if e.args[0] == winerror.ERROR_FILE_NOT_FOUND:  #2
-                print("no pipe, trying again in a bit later")
-                time.sleep(0.2)
-            elif e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
-                print("broken pipe, bye bye")
+            if e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
+                logger.info("EOF: broken pipe, bye bye")
+                raise EOF("broken pipe, bye bye")
             elif e.args[0] == winerror.ERROR_NO_DATA:
                 '''232 (0xE8)
                 The pipe is being closed.
                 '''
-                print("The pipe is being closed.")
+                logger.info("The pipe is being closed.")
+                raise EOF("The pipe is being closed.")
             else:
                 raise            
         return len(s)
@@ -984,9 +997,12 @@ class SpawnSocket(SpawnBase):
                 self.flag_child_finished = True
                 logger.info('self.isalive() == False: Child has been died, lets do a last read!')
                 
-            logger.debug(f'Reading socket...')
             s = self.sock.recv(size)
-            logger.debug(f's: {s}')
+            
+            if s:
+                logger.debug(f'Readed: {s}')
+            else:
+                logger.spam(f'Readed: {s}')
         except EOF:
             self.flag_eof = True
             raise
