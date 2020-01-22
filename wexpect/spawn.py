@@ -204,7 +204,7 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
       
 class SpawnBase:
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
-        logfile=None, cwd=None, env=None, codepage=None, echo=True, safe_exit=True, **kwargs):
+        logfile=None, cwd=None, env=None, codepage=None, echo=True, safe_exit=True, interact=False, **kwargs):
         """This starts the given command in a child process. This does all the
         fork/exec type of stuff for a pty. This is called by __init__. If args
         is empty then command will be parsed (split on spaces) and args will be
@@ -249,6 +249,7 @@ class SpawnBase:
         self.flag_child_finished = False
         self.buffer = '' # This is the read buffer. See maxread.
         self.searchwindowsize = searchwindowsize # Anything before searchwindowsize point is preserved, but not searched.
+        self.interact = interact
         
 
         # If command is an int type then it may represent a file descriptor.
@@ -914,7 +915,7 @@ class SpawnPipe(SpawnBase):
                                         "import wexpect;"
                                         "import time;"
                                         "wexpect.console_reader.logger.info('loggerStart.');"
-                                        f"wexpect.ConsoleReaderPipe(wexpect.join_args({args}), {pid}, local_echo={self.echo});"
+                                        f"wexpect.ConsoleReaderPipe(wexpect.join_args({args}), {pid}, local_echo={self.echo}, interact={self.interact});"
                                         "wexpect.console_reader.logger.info('Console finished2.');"
                                         )
         
@@ -927,11 +928,11 @@ class SpawnPipe(SpawnBase):
 class SpawnSocket(SpawnBase):
     
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
-        logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321, host='localhost'):
+        logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321, host='localhost', interact=False):
         self.port = port
         self.host = host
         super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
-             searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo)
+             searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
         
     
     def send(self, s):
@@ -1031,7 +1032,7 @@ class SpawnSocket(SpawnBase):
                                         "import wexpect;"
                                         "import time;"
                                         "wexpect.console_reader.logger.info('loggerStart.');"
-                                        f"wexpect.ConsoleReaderSocket(wexpect.join_args({args}), {pid}, port={self.port}, local_echo={self.echo});"
+                                        f"wexpect.ConsoleReaderSocket(wexpect.join_args({args}), {pid}, port={self.port}, local_echo={self.echo}, interact={self.interact});"
                                         "wexpect.console_reader.logger.info('Console finished2.');"
                                         )
         

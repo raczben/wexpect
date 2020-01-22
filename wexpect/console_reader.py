@@ -51,7 +51,7 @@ import win32console
 import win32process
 import win32con
 import win32file
-import winerror
+import win32gui
 import win32pipe
 import socket
 
@@ -85,7 +85,7 @@ class ConsoleReaderBase:
     """
 
     def __init__(self, path, host_pid, cp=None, window_size_x=80, window_size_y=25,
-                 buffer_size_x=80, buffer_size_y=16000, local_echo=True, **kwargs):
+                 buffer_size_x=80, buffer_size_y=16000, local_echo=True, interact=False, **kwargs):
         """Initialize the console starts the child in it and reads the console periodically.        
 
         Args:
@@ -131,6 +131,10 @@ class ConsoleReaderBase:
                 logger.info(traceback.format_exc())
                 return
                   
+            if interact:
+                self.interact()
+                self.interact()
+                
             self.read_loop()
         except:
             logger.error(traceback.format_exc())
@@ -409,6 +413,13 @@ class ConsoleReaderBase:
         self.__currentReadCo.Y = cursorPos.Y
 
         return s
+    
+    def interact(self):
+        """Displays the child console for interaction."""
+        
+        logger.debug('Start interact window')
+        win32gui.ShowWindow(win32console.GetConsoleWindow(), win32con.SW_SHOW)
+        
     
 class ConsoleReaderSocket(ConsoleReaderBase): 
     
