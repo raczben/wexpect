@@ -175,7 +175,7 @@ class ConsoleReaderBase:
                 self.resumeThread()
                 paused = False
                                 
-            time.sleep(.1)
+            time.sleep(.02)
             
     def terminate_child(self):
         try:
@@ -437,7 +437,7 @@ class ConsoleReaderSocket(ConsoleReaderBase):
             self.sock.settimeout(5)
             self.sock.listen(1)
             self.connection, client_address = self.sock.accept()
-            self.connection.settimeout(.2)
+            self.connection.settimeout(.01)
             logger.info(f'Client connected: {client_address}')
         except:
             logger.error(f"Port: {self.port}")

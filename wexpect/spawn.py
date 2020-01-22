@@ -990,6 +990,10 @@ class SpawnSocket(SpawnBase):
         except EOF:
             self.flag_eof = True
             raise
+        except ConnectionResetError:
+            self.flag_eof = True
+            logger.info("EOF('ConnectionResetError')")
+            raise EOF('ConnectionResetError')
         except socket.timeout:
             return ''
 

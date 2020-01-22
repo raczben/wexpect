@@ -44,7 +44,6 @@ import os
 import logging
 
 def init_logger(logger):
-    os.environ['WEXPECT_LOGGER_LEVEL'] = 'DEBUG'
     try:
         logger_level = os.environ['WEXPECT_LOGGER_LEVEL']
         try:

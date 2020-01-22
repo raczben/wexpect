@@ -41,9 +41,12 @@ class TestCaseConstructor(PexpectTestCase.PexpectTestCase):
     def test_named_parameters (self):
         '''This tests that named parameters work.
         '''
-        p = wexpect.spawn ('ls',timeout=10)
-        p = wexpect.spawn (timeout=10, command='ls')
-        p = wexpect.spawn (args=[], command='ls')
+        p = wexpect.spawn('ls',timeout=10)
+        p.wait()
+        p = wexpect.spawn(timeout=10, command='ls')
+        p.wait()
+        p = wexpect.spawn(args=[], command='ls')
+        p.wait()
 
 if __name__ == '__main__':
     unittest.main()
