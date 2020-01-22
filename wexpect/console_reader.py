@@ -85,7 +85,7 @@ class ConsoleReaderBase:
     """
 
     def __init__(self, path, host_pid, cp=None, window_size_x=80, window_size_y=25,
-                 buffer_size_x=80, buffer_size_y=16000, **kwargs):
+                 buffer_size_x=80, buffer_size_y=16000, local_echo=True, **kwargs):
         """Initialize the console starts the child in it and reads the console periodically.        
 
         Args:
@@ -103,7 +103,7 @@ class ConsoleReaderBase:
         self.connection = None
         self.consin = None
         self.consout = None
-        self.local_echo = True
+        self.local_echo = local_echo
         self.console_pid = os.getpid()
         self.host_pid = host_pid
         self.host_process = psutil.Process(host_pid)

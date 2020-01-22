@@ -242,6 +242,7 @@ class SpawnBase:
         self.delimiter = EOF
         self.cwd = cwd
         self.env = env
+        self.echo = echo
         self.maxread = maxread # max bytes to read at one time into buffer
         self.delaybeforesend = 0.05 # Sets sleep time used just before sending data to child. Time in seconds.
         self.delayafterterminate = 0.1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
@@ -913,7 +914,7 @@ class SpawnPipe(SpawnBase):
                                         "import wexpect;"
                                         "import time;"
                                         "wexpect.console_reader.logger.info('loggerStart.');"
-                                        f"wexpect.ConsoleReaderPipe(wexpect.join_args({args}), {pid});"
+                                        f"wexpect.ConsoleReaderPipe(wexpect.join_args({args}), {pid}, local_echo={self.echo});"
                                         "wexpect.console_reader.logger.info('Console finished2.');"
                                         )
         
@@ -1030,7 +1031,7 @@ class SpawnSocket(SpawnBase):
                                         "import wexpect;"
                                         "import time;"
                                         "wexpect.console_reader.logger.info('loggerStart.');"
-                                        f"wexpect.ConsoleReaderSocket(wexpect.join_args({args}), {pid}, port={self.port});"
+                                        f"wexpect.ConsoleReaderSocket(wexpect.join_args({args}), {pid}, port={self.port}, local_echo={self.echo});"
                                         "wexpect.console_reader.logger.info('Console finished2.');"
                                         )
         
