@@ -108,6 +108,8 @@ class ConsoleReaderBase:
         self.console_pid = os.getpid()
         self.host_pid = host_pid
         self.host_process = psutil.Process(host_pid)
+        self.child_process = None
+        self.child_pid = None
         
         logger.info("ConsoleReader started")
         
@@ -125,8 +127,9 @@ class ConsoleReaderBase:
             try:
                 self.initConsole()
                 si = win32process.GetStartupInfo()
-                self.__childProcess, _, childPid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
+                self.__childProcess, _, self.child_pid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
                                                                              0, None, None, si)
+                self.child_process = psutil.Process(self.child_pid)
                 
             except:
                 logger.info(traceback.format_exc())
@@ -141,6 +144,19 @@ class ConsoleReaderBase:
             logger.error(traceback.format_exc())
             time.sleep(.1)
         finally:
+            try:
+                self.terminate_child()
+                time.sleep(.1) 
+                self.send_to_host(self.readConsoleToCursor())
+                self.sendeof()
+                time.sleep(.1)
+                self.close_connection()
+                logger.info('Console finished.')
+            except:
+                logger.error(traceback.format_exc())
+                time.sleep(.1)
+                
+            
             self.terminate_child()
             time.sleep(.1) 
             self.send_to_host(self.readConsoleToCursor())

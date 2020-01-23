@@ -769,7 +769,8 @@ class SpawnBase:
                 if timeout is not None and end_time < time.time():
                     logger.info('Timeout exceeded in expect_any().')
                     raise TIMEOUT ('Timeout exceeded in expect_any().')
-                # Still have time left, so read more data
+                # Still have time left, so read more data        
+                self.isalive()
                 c = self.read_nonblocking(self.maxread)
                 freshlen = len(c)
                 time.sleep (0.01)
@@ -863,41 +864,34 @@ class SpawnPipe(SpawnBase):
         if self.closed:
             logger.warning('I/O operation on closed file in read_nonblocking().')
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
-        
+            
         try:
-            self.isalive()
+            s = win32file.ReadFile(self.pipe, size)[1]
+            
+            if s:
+                logger.debug(f'Readed: {s}')
+            else:
+                logger.spam(f'Readed: {s}')
                 
-            try:
-                s = win32file.ReadFile(self.pipe, size)[1]
+            if b'\x04' in s:
+                self.flag_eof = True
+                logger.info("EOF: EOF character has been arrived")
+                raise EOF('EOF character has been arrived')
                 
-                if s:
-                    logger.debug(f'Readed: {s}')
-                else:
-                    logger.spam(f'Readed: {s}')
-                    
-                if b'\x04' in s:
-                    self.flag_eof = True
-                    logger.info("EOF: EOF character has been arrived")
-                    raise EOF('EOF character has been arrived')
-                    
-                return s.decode()
-            except pywintypes.error as e:
-                if e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
-                    self.flag_eof = True
-                    logger.info("EOF('broken pipe, bye bye')")
-                    raise EOF('broken pipe, bye bye')
-                elif e.args[0] == winerror.ERROR_NO_DATA:
-                    '''232 (0xE8)
-                    The pipe is being closed.
-                    '''
-                    self.flag_eof = True
-                    logger.info("EOF('The pipe is being closed.')")
-                    raise EOF('The pipe is being closed.')
-                else:
-                    raise
-        except:
-            raise
-        return ''
+            return s.decode()
+        except pywintypes.error as e:
+            if e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
+                self.flag_eof = True
+                logger.info("EOF('broken pipe, bye bye')")
+                raise EOF('broken pipe, bye bye')
+            elif e.args[0] == winerror.ERROR_NO_DATA:
+                '''232 (0xE8): The pipe is being closed.
+                '''
+                self.flag_eof = True
+                logger.info("EOF('The pipe is being closed.')")
+                raise EOF('The pipe is being closed.')
+            else:
+                raise
     
     def send(self, s):
         """This sends a string to the child process. This returns the number of
@@ -978,7 +972,6 @@ class SpawnSocket(SpawnBase):
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
         
         try:
-            self.isalive()
             s = self.sock.recv(size)
             
             if s:
@@ -991,10 +984,7 @@ class SpawnSocket(SpawnBase):
                 self.flag_eof = True
                 logger.info("EOF: EOF character has been arrived")
                 raise EOF('EOF character has been arrived')
-                    
-        except EOF:
-            self.flag_eof = True
-            raise
+                  
         except ConnectionResetError:
             self.flag_eof = True
             logger.info("EOF('ConnectionResetError')")
