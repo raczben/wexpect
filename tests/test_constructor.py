@@ -28,9 +28,9 @@ class TestCaseConstructor(PexpectTestCase.PexpectTestCase):
         the same results for different styles of invoking __init__().
         This assumes that the root directory / is static during the test.
         '''
-        p1 = wexpect.spawn('uname -m -n -p -r -s -v')
+        p1 = wexpect.spawn('uname -m -n -p -r -s -v', timeout=5, port=4321)
         p1.expect(wexpect.EOF)
-        p2 = wexpect.spawn('uname', ['-m', '-n', '-p', '-r', '-s', '-v'])
+        p2 = wexpect.spawn('uname', ['-m', '-n', '-p', '-r', '-s', '-v'], timeout=5, port=4322)
         p2.expect(wexpect.EOF)
         self.assertEqual(p1.before, p2.before)
         self.assertEqual(str(p1).splitlines()[1:9], str(p2).splitlines()[1:9])

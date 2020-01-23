@@ -157,14 +157,6 @@ class ConsoleReaderBase:
                 time.sleep(.1)
                 
             
-            self.terminate_child()
-            time.sleep(.1) 
-            self.send_to_host(self.readConsoleToCursor())
-            self.sendeof()
-            time.sleep(.1)
-            self.close_connection()
-            logger.info('Console finished.')
-            
     def read_loop(self):
         paused = False
         
@@ -201,14 +193,10 @@ class ConsoleReaderBase:
             
     def terminate_child(self):
         try:
-            win32process.TerminateProcess(self.__childProcess, 0)
-        except pywintypes.error as e:
-            """ 'Access denied' happens always? Perhaps if not running as admin (or UAC
-            enabled under Vista/7). Don't log. Child process will exit regardless when 
-            calling sys.exit
-            """
-            # if e.args[0] != winerror.ERROR_ACCESS_DENIED:
-            logger.info(e)
+            if self.child_process:
+                self.child_process.kill()
+        except psutil.NoSuchProcess:
+            logger.info('The process has already died.')
         return
         
     def isalive(self, process):
@@ -477,12 +465,13 @@ class ConsoleReaderSocket(ConsoleReaderBase):
             
     def send_to_host(self, msg):
         # convert to bytes
-        msg_bytes = str.encode(msg)
-        if msg_bytes:
-            logger.debug(f'Sending msg: {msg_bytes}')
+        if isinstance(msg, str):
+            msg = str.encode(msg)
+        if msg:
+            logger.debug(f'Sending msg: {msg}')
         else:
-            logger.spam(f'Sending msg: {msg_bytes}')
-        self.connection.sendall(msg_bytes)
+            logger.spam(f'Sending msg: {msg}')
+        self.connection.sendall(msg)
         
     def get_from_host(self):
         try:
@@ -524,12 +513,13 @@ class ConsoleReaderPipe(ConsoleReaderBase):
         
     def send_to_host(self, msg):
         # convert to bytes
-        msg_bytes = str.encode(msg)
-        if msg_bytes:
-            logger.debug(f'Sending msg: {msg_bytes}')
+        if isinstance(msg, str):
+            msg = str.encode(msg)
+        if msg:
+            logger.debug(f'Sending msg: {msg}')
         else:
-            logger.spam(f'Sending msg: {msg_bytes}')
-        win32file.WriteFile(self.pipe, msg_bytes)
+            logger.spam(f'Sending msg: {msg}')
+        win32file.WriteFile(self.pipe, msg)
     
     def get_from_host(self):
         data, avail, bytes_left = win32pipe.PeekNamedPipe(self.pipe, 4096)

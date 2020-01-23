@@ -291,12 +291,14 @@ class SpawnBase:
         garbage collects Python objects, not the child console."""
         
         try:
+            logger.info('Deleting...')
             self.terminate()
             self.disconnect_from_child()
             if self.safe_exit:
                 self.wait()
         except:
             traceback.print_exc()
+            logger.warning(traceback.format_exc())
            
     def __str__(self):
         """This returns a human-readable string that represents the state of
