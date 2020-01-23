@@ -195,7 +195,6 @@ class ConsoleReaderBase:
             logger.info(e)
         return
         
-       
     def isalive(self, process):
         """True if the child is still alive, false otherwise"""
         try:
@@ -265,7 +264,6 @@ class ConsoleReaderBase:
         self.__consSize = consinfo['Size']
         logger.info('self.__consSize: ' + str(self.__consSize))
         self.startCursorPos = consinfo['CursorPosition']  
-    
         
     def parseData(self, s):
         """Ensures that special characters are interpretted as
@@ -343,7 +341,6 @@ class ConsoleReaderBase:
             startCo = endPoint
 
         return ''.join(buff)
-    
     
     def readConsoleToCursor(self):
         """Reads from the current read position to the current cursor
@@ -439,7 +436,6 @@ class ConsoleReaderBase:
     
 class ConsoleReaderSocket(ConsoleReaderBase): 
     
-        
     def create_connection(self, **kwargs):
         try:        
             self.port = kwargs['port']
@@ -528,5 +524,3 @@ class ConsoleReaderPipe(ConsoleReaderBase):
             return ret.decode()
         else:
             return ''
-        
-         

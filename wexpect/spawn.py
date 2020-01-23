@@ -97,7 +97,6 @@ init_logger(logger)
 
 def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None, logfile=None,
          cwd=None, env=None, **kwargs):
-
     """
     This function runs the given command; waits for it to finish; then
     returns all output as a string. STDERR is included in output. If the full
@@ -300,7 +299,6 @@ class SpawnBase:
             traceback.print_exc()
            
     def __str__(self):
-
         """This returns a human-readable string that represents the state of
         the object. """
 
@@ -462,7 +460,6 @@ class SpawnBase:
         return self.before
 
     def readline (self, size = -1):    # File-like object.
-
         """This reads and returns one entire line. A trailing newline is kept
         in the string, but may be absent when a file ends with an incomplete
         line. Note: This readline() looks for a \\r\\n pair even on UNIX
@@ -481,7 +478,6 @@ class SpawnBase:
             return self.before
 
     def __iter__ (self):    # File-like object.
-
         """This is to support iterators over a file-like object.
         """
 
@@ -493,7 +489,6 @@ class SpawnBase:
         raise NotImplementedError
 
     def __next__ (self):    # File-like object.
-
         """This is to support iterators over a file-like object.
         """
 
@@ -509,7 +504,6 @@ class SpawnBase:
         self.terminate()
 
     def readlines (self, sizehint = -1):    # File-like object.
-
         """This reads until EOF using readline() and returns a list containing
         the lines thus read. The optional "sizehint" argument is ignored. """
 
@@ -534,7 +528,6 @@ class SpawnBase:
         self.send(s)
 
     def writelines (self, sequence):   # File-like object.
-
         """This calls write() for each element in the sequence. The sequence
         can be any iterable object producing strings, typically a list of
         strings. This does not add line separators There is no return value.
@@ -553,7 +546,6 @@ class SpawnBase:
         return n
 
     def sendeof(self):
-
         """This sends an EOF to the child. This sends a character which causes
         the pending parent output buffer to be sent to the waiting child
         program without waiting for end-of-line. If it is the first character
@@ -583,7 +575,6 @@ class SpawnBase:
         raise NotImplementedError
     
     def compile_pattern_list(self, patterns):
-
         """This compiles a pattern-string or a list of pattern-strings.
         Patterns must be a StringType, EOF, TIMEOUT, SRE_Pattern, or a list of
         those. Patterns may also be None which results in an empty list (you
@@ -632,7 +623,6 @@ class SpawnBase:
         return compiled_pattern_list
 
     def expect(self, pattern, timeout = -1, searchwindowsize=None):
-
         """This seeks through the stream until a pattern is matched. The
         pattern is overloaded and may take several types. The pattern can be a
         StringType, EOF, a compiled re, or a list of any of those types.
@@ -712,7 +702,6 @@ class SpawnBase:
         return self.expect_list(compiled_pattern_list, timeout, searchwindowsize)
 
     def expect_list(self, pattern_list, timeout = -1, searchwindowsize = -1):
-
         """This takes a list of compiled regular expressions and returns the
         index into the pattern_list that matched the child output. The list may
         also contain EOF or TIMEOUT (which are not compiled regular
@@ -726,7 +715,6 @@ class SpawnBase:
         return self.expect_loop(searcher_re(pattern_list), timeout, searchwindowsize)
 
     def expect_exact(self, pattern_list, timeout = -1, searchwindowsize = -1):
-
         """This is similar to expect(), but uses plain string matching instead
         of compiled regular expressions in 'pattern_list'. The 'pattern_list'
         may be a string; a list or other sequence of strings; or TIMEOUT and
@@ -750,7 +738,6 @@ class SpawnBase:
         return self.expect_loop(searcher_string(pattern_list), timeout, searchwindowsize)
 
     def expect_loop(self, searcher, timeout = -1, searchwindowsize = -1):
-
         """This is the common loop used inside expect. The 'searcher' should be
         an instance of searcher_re or searcher_string, which describes how and what
         to search for in the input.
@@ -830,9 +817,6 @@ class SpawnPipe(SpawnBase):
         
         super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
              searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
-        
-    
-    
     
     def connect_to_child(self):
         pipe_name = 'wexpect_{}'.format(self.console_pid)
@@ -946,7 +930,6 @@ class SpawnPipe(SpawnBase):
         child_class_initializator = f"wexpect.ConsoleReaderPipe(wexpect.join_args({args}), {self.host_pid}, local_echo={self.echo}, interact={self.interact});"
         return child_class_initializator
 
-    
 class SpawnSocket(SpawnBase):
     
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
@@ -958,7 +941,6 @@ class SpawnSocket(SpawnBase):
         super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
              searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
         
-    
     def send(self, s):
         """This sends a string to the child process. This returns the number of
         bytes written. If a log file was set then the data is also written to
@@ -1028,7 +1010,6 @@ class SpawnSocket(SpawnBase):
     
 
 class searcher_re (object):
-
     """This is regular expression string search helper for the
     spawn.expect_any() method.
 
@@ -1047,7 +1028,6 @@ class searcher_re (object):
     """
 
     def __init__(self, patterns):
-
         """This creates an instance that searches for 'patterns' Where
         'patterns' may be a list or other sequence of compiled regular
         expressions, or the EOF or TIMEOUT types."""
@@ -1065,7 +1045,6 @@ class searcher_re (object):
             self._searches.append((n, s))
 
     def __str__(self):
-
         """This returns a human-readable string that represents the state of
         the object."""
 
@@ -1080,7 +1059,6 @@ class searcher_re (object):
         return '\n'.join(ss)
 
     def search(self, buffer, freshlen, searchwindowsize=None):
-
         """This searches 'buffer' for the first occurence of one of the regular
         expressions. 'freshlen' must indicate the number of bytes at the end of
         'buffer' which have not been searched before.
@@ -1116,7 +1094,6 @@ class searcher_re (object):
     
     
 class searcher_string (object):
-
     """This is a plain string search helper for the spawn.expect_any() method.
 
     Attributes:
@@ -1133,7 +1110,6 @@ class searcher_string (object):
     """
 
     def __init__(self, strings):
-
         """This creates an instance of searcher_string. This argument 'strings'
         may be a list; a sequence of strings; or the EOF or TIMEOUT types. """
 
@@ -1150,7 +1126,6 @@ class searcher_string (object):
             self._strings.append((n, s))
 
     def __str__(self):
-
         """This returns a human-readable string that represents the state of
         the object."""
 
@@ -1165,7 +1140,6 @@ class searcher_string (object):
         return '\n'.join(ss)
 
     def search(self, buffer, freshlen, searchwindowsize=None):
-
         """This searches 'buffer' for the first occurence of one of the search
         strings.  'freshlen' must indicate the number of bytes at the end of
         'buffer' which have not been searched before. It helps to avoid
