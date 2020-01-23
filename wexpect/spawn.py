@@ -159,9 +159,9 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
     dictionary passed to a callback. """
 
     if timeout == -1:
-        child = SpawnSocket(command, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
+        child = SpawnPipe(command, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
     else:
-        child = SpawnSocket(command, timeout=timeout, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
+        child = SpawnPipe(command, timeout=timeout, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
     if events is not None:
         patterns = list(events.keys())
         responses = list(events.values())
@@ -221,6 +221,7 @@ class SpawnBase:
         That may not necessarily be bad because you may haved spawned a child
         that performs some task; creates no stdout output; and then dies.
         """
+        self.host_pid = os.getpid() # That's me
         self.console_process = None
         self.console_pid = None
         self.child_process = None
@@ -238,7 +239,6 @@ class SpawnBase:
         self.status = None # status returned by os.waitpid
         self.flag_eof = False
         self.flag_child_finished = False
-        self.pid = None
         self.child_fd = -1 # initially closed
         self.timeout = timeout
         self.delimiter = EOF
@@ -316,7 +316,7 @@ class SpawnBase:
         s.append('match_index: ' + str(self.match_index))
         s.append('exitstatus: ' + str(self.exitstatus))
         s.append('flag_eof: ' + str(self.flag_eof))
-        s.append('pid: ' + str(self.pid))
+        s.append('host_pid: ' + str(self.host_pid))
         s.append('child_fd: ' + str(self.child_fd))
         s.append('closed: ' + str(self.closed))
         s.append('timeout: ' + str(self.timeout))
@@ -327,7 +327,53 @@ class SpawnBase:
         s.append('delaybeforesend: ' + str(self.delaybeforesend))
         s.append('delayafterterminate: ' + str(self.delayafterterminate))
         return '\n'.join(s)
+
+    def startChild(self, args, env):
+        si = win32process.GetStartupInfo()
+        si.dwFlags = win32process.STARTF_USESHOWWINDOW
+        si.wShowWindow = win32con.SW_HIDE
     
+        dirname = os.path.dirname(sys.executable 
+                                  if getattr(sys, 'frozen', False) else 
+                                  os.path.abspath(__file__))
+        spath = [os.path.dirname(dirname)]
+        pyargs = ['-c']
+        if getattr(sys, 'frozen', False):
+            # If we are running 'frozen', add library.zip and lib\library.zip to sys.path
+            # py2exe: Needs appropriate 'zipfile' option in setup script and 'bundle_files' 3
+            spath.append(os.path.join(dirname, 'library.zip'))
+            spath.append(os.path.join(dirname, 'library.zip', 
+                                      os.path.basename(os.path.splitext(sys.executable)[0])))
+            if os.path.isdir(os.path.join(dirname, 'lib')):
+                dirname = os.path.join(dirname, 'lib')
+                spath.append(os.path.join(dirname, 'library.zip'))
+                spath.append(os.path.join(dirname, 'library.zip', 
+                                          os.path.basename(os.path.splitext(sys.executable)[0])))
+            pyargs.insert(0, '-S')  # skip 'import site'
+        
+        if getattr(sys, 'frozen', False):
+            python_executable = os.path.join(dirname, 'python.exe') 
+        else:
+            python_executable = os.path.join(os.path.dirname(sys.executable), 'python.exe')
+              
+        child_class_initializator = self.get_child_class_initializator(args)
+        
+        commandLine = '"%s" %s "%s"' % (python_executable, 
+                                        ' '.join(pyargs), 
+                                        "import sys;"
+                                        f"sys.path = {spath} + sys.path;"
+                                        "import wexpect;"
+                                        "import time;"
+                                        "wexpect.console_reader.logger.info('loggerStart.');"
+                                        f"{child_class_initializator}"
+                                        "wexpect.console_reader.logger.info('Console finished2.');"
+                                        )
+        
+        logger.info(f'Console starter command:{commandLine}')
+        
+        _, _, self.console_pid, __otid = win32process.CreateProcess(None, commandLine, None, None, False, 
+                                                        win32process.CREATE_NEW_CONSOLE, None, None, si)
+        
     def get_console_process(self, force=False):
         if force or self.console_process is None:
             self.console_process = psutil.Process(self.console_pid)
@@ -835,17 +881,7 @@ class SpawnPipe(SpawnBase):
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
         
         try:
-            # The real child and it's console are two different process. The console dies 0.1 sec
-            # later to be able to read the child's last output (before EOF). So here we check
-            # isalive() (which checks the real child.) and try a last read on the console. To catch
-            # the last output.
-            # The flag_child_finished flag shows that this is the second trial, where we raise the EOF.
-#            if self.flag_child_finished:
-#                logger.info('EOF: self.flag_child_finished')
-#                raise EOF('self.flag_child_finished')
-            if not self.isalive():
-                self.flag_child_finished = True
-                logger.info('self.isalive() == False: Child has been died, lets do a last read!')
+            self.isalive()
                 
             try:
                 s = win32file.ReadFile(self.pipe, size)[1]
@@ -906,51 +942,9 @@ class SpawnPipe(SpawnBase):
                 raise            
         return len(s)
 
-    def startChild(self, args, env):
-        si = win32process.GetStartupInfo()
-        si.dwFlags = win32process.STARTF_USESHOWWINDOW
-        si.wShowWindow = win32con.SW_HIDE
-    
-        dirname = os.path.dirname(sys.executable 
-                                  if getattr(sys, 'frozen', False) else 
-                                  os.path.abspath(__file__))
-        spath = [os.path.dirname(dirname)]
-        pyargs = ['-c']
-        if getattr(sys, 'frozen', False):
-            # If we are running 'frozen', add library.zip and lib\library.zip
-            # to sys.path
-            # py2exe: Needs appropriate 'zipfile' option in setup script and 
-            # 'bundle_files' 3
-            spath.append(os.path.join(dirname, 'library.zip'))
-            spath.append(os.path.join(dirname, 'library.zip', 
-                                      os.path.basename(os.path.splitext(sys.executable)[0])))
-            if os.path.isdir(os.path.join(dirname, 'lib')):
-                dirname = os.path.join(dirname, 'lib')
-                spath.append(os.path.join(dirname, 'library.zip'))
-                spath.append(os.path.join(dirname, 'library.zip', 
-                                          os.path.basename(os.path.splitext(sys.executable)[0])))
-            pyargs.insert(0, '-S')  # skip 'import site'
-        
-        
-        pid = win32process.GetCurrentProcessId()
-        
-        commandLine = '"%s" %s "%s"' % (os.path.join(dirname, 'python.exe') 
-                                        if getattr(sys, 'frozen', False) else 
-                                        os.path.join(os.path.dirname(sys.executable), 'python.exe'), 
-                                        ' '.join(pyargs), 
-                                        "import sys;"
-                                        f"sys.path = {spath} + sys.path;"
-                                        "import wexpect;"
-                                        "import time;"
-                                        "wexpect.console_reader.logger.info('loggerStart.');"
-                                        f"wexpect.ConsoleReaderPipe(wexpect.join_args({args}), {pid}, local_echo={self.echo}, interact={self.interact});"
-                                        "wexpect.console_reader.logger.info('Console finished2.');"
-                                        )
-        
-        logger.info(f'Console starter command:{commandLine}')
-        
-        _, _, self.console_pid, __otid = win32process.CreateProcess(None, commandLine, None, None, False, 
-                                                        win32process.CREATE_NEW_CONSOLE, None, None, si)
+    def get_child_class_initializator(self, args, **kwargs):
+        child_class_initializator = f"wexpect.ConsoleReaderPipe(wexpect.join_args({args}), {self.host_pid}, local_echo={self.echo}, interact={self.interact});"
+        return child_class_initializator
 
     
 class SpawnSocket(SpawnBase):
@@ -1002,18 +996,7 @@ class SpawnSocket(SpawnBase):
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
         
         try:
-            # The real child and it's console are two different process. The console dies 0.1 sec
-            # later to be able to read the child's last output (before EOF). So here we check
-            # isalive() (which checks the real child.) and try a last read on the console. To catch
-            # the last output.
-            # The flag_child_finished flag shows that this is the second trial, where we raise the EOF.
-            if self.flag_child_finished:
-                logger.info("EOF('self.flag_child_finished')")
-                raise EOF('self.flag_child_finished')
-            if not self.isalive():
-                self.flag_child_finished = True
-                logger.info('self.isalive() == False: Child has been died, lets do a last read!')
-                
+            self.isalive()
             s = self.sock.recv(size)
             
             if s:
@@ -1039,52 +1022,9 @@ class SpawnSocket(SpawnBase):
 
         return s.decode()
 
-    def startChild(self, args, env):
-        si = win32process.GetStartupInfo()
-        si.dwFlags = win32process.STARTF_USESHOWWINDOW
-        si.wShowWindow = win32con.SW_HIDE
-    
-        dirname = os.path.dirname(sys.executable 
-                                  if getattr(sys, 'frozen', False) else 
-                                  os.path.abspath(__file__))
-        spath = [os.path.dirname(dirname)]
-        pyargs = ['-c']
-        if getattr(sys, 'frozen', False):
-            # If we are running 'frozen', add library.zip and lib\library.zip
-            # to sys.path
-            # py2exe: Needs appropriate 'zipfile' option in setup script and 
-            # 'bundle_files' 3
-            spath.append(os.path.join(dirname, 'library.zip'))
-            spath.append(os.path.join(dirname, 'library.zip', 
-                                      os.path.basename(os.path.splitext(sys.executable)[0])))
-            if os.path.isdir(os.path.join(dirname, 'lib')):
-                dirname = os.path.join(dirname, 'lib')
-                spath.append(os.path.join(dirname, 'library.zip'))
-                spath.append(os.path.join(dirname, 'library.zip', 
-                                          os.path.basename(os.path.splitext(sys.executable)[0])))
-            pyargs.insert(0, '-S')  # skip 'import site'
-        
-        
-        pid = win32process.GetCurrentProcessId()
-        
-        commandLine = '"%s" %s "%s"' % (os.path.join(dirname, 'python.exe') 
-                                        if getattr(sys, 'frozen', False) else 
-                                        os.path.join(os.path.dirname(sys.executable), 'python.exe'), 
-                                        ' '.join(pyargs), 
-                                        "import sys;"
-                                        f"sys.path = {spath} + sys.path;"
-                                        "import wexpect;"
-                                        "import time;"
-                                        "wexpect.console_reader.logger.info('loggerStart.');"
-                                        f"wexpect.ConsoleReaderSocket(wexpect.join_args({args}), {pid}, port={self.port}, local_echo={self.echo}, interact={self.interact});"
-                                        "wexpect.console_reader.logger.info('Console finished2.');"
-                                        )
-        
-        logger.info(f'Console starter command:{commandLine}')
-        
-        _, _, self.console_pid, __otid = win32process.CreateProcess(None, commandLine, None, None, False, 
-                                                        win32process.CREATE_NEW_CONSOLE, None, None, si)
-
+    def get_child_class_initializator(self, args, **kwargs):
+        child_class_initializator = f"wexpect.ConsoleReaderSocket(wexpect.join_args({args}), {self.host_pid}, port={self.port}, local_echo={self.echo}, interact={self.interact});"
+        return child_class_initializator
     
 
 class searcher_re (object):
