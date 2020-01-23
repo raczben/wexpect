@@ -56,6 +56,7 @@ import win32pipe
 import socket
 
 from .wexpect_util import init_logger
+from .wexpect_util import EOF_CHAR
 
 # 
 # System-wide constants
@@ -143,6 +144,7 @@ class ConsoleReaderBase:
             self.terminate_child()
             time.sleep(.1) 
             self.send_to_host(self.readConsoleToCursor())
+            self.sendeof()
             time.sleep(.1)
             self.close_connection()
             logger.info('Console finished.')
@@ -426,6 +428,13 @@ class ConsoleReaderBase:
         
         logger.debug('Start interact window')
         win32gui.ShowWindow(win32console.GetConsoleWindow(), win32con.SW_SHOW)
+        
+    def sendeof(self):
+        """This sends an EOF to the host. This sends a character which inform the host that child
+        has been finished, and all of it's output has been send to host.
+        """
+
+        self.send_to_host(EOF_CHAR)
         
     
 class ConsoleReaderSocket(ConsoleReaderBase): 

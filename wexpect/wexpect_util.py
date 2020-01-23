@@ -43,6 +43,9 @@ import sys
 import os
 import logging
 
+# platform does not define VEOF so assume CTRL-D
+EOF_CHAR = b'\x04'
+
 SPAM = 5
 logging.addLevelName(SPAM, "SPAM")
 def spam(self, message, *args, **kws):

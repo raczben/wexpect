@@ -88,6 +88,7 @@ from .wexpect_util import EOF
 from .wexpect_util import TIMEOUT
 from .wexpect_util import split_command_line
 from .wexpect_util import init_logger
+from .wexpect_util import EOF_CHAR
 
 logger = logging.getLogger('wexpect')
         
@@ -247,7 +248,6 @@ class SpawnBase:
         self.maxread = maxread # max bytes to read at one time into buffer
         self.delaybeforesend = 0.1 # Sets sleep time used just before sending data to child. Time in seconds.
         self.delayafterterminate = 0.1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
-        self.flag_child_finished = False
         self.buffer = '' # This is the read buffer. See maxread.
         self.searchwindowsize = searchwindowsize # Anything before searchwindowsize point is preserved, but not searched.
         self.interact = interact
@@ -778,6 +778,15 @@ class SpawnBase:
 
 class SpawnPipe(SpawnBase):
     
+    def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
+        logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321, host='localhost', interact=False):
+        self.pipe = None
+        
+        super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
+             searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
+        
+    
+    
     
     def connect_to_child(self):
         pipe_name = 'wexpect_{}'.format(self.console_pid)
@@ -831,9 +840,9 @@ class SpawnPipe(SpawnBase):
             # isalive() (which checks the real child.) and try a last read on the console. To catch
             # the last output.
             # The flag_child_finished flag shows that this is the second trial, where we raise the EOF.
-            if self.flag_child_finished:
-                logger.info('EOF: self.flag_child_finished')
-                raise EOF('self.flag_child_finished')
+#            if self.flag_child_finished:
+#                logger.info('EOF: self.flag_child_finished')
+#                raise EOF('self.flag_child_finished')
             if not self.isalive():
                 self.flag_child_finished = True
                 logger.info('self.isalive() == False: Child has been died, lets do a last read!')
@@ -845,6 +854,12 @@ class SpawnPipe(SpawnBase):
                     logger.debug(f'Readed: {s}')
                 else:
                     logger.spam(f'Readed: {s}')
+                    
+                if b'\x04' in s:
+                    self.flag_eof = True
+                    logger.info("EOF: EOF character has been arrived")
+                    raise EOF('EOF character has been arrived')
+                    
                 return s.decode()
             except pywintypes.error as e:
                 if e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
@@ -944,6 +959,8 @@ class SpawnSocket(SpawnBase):
         logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321, host='localhost', interact=False):
         self.port = port
         self.host = host
+        self.sock = None
+        
         super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
              searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
         
@@ -1003,6 +1020,13 @@ class SpawnSocket(SpawnBase):
                 logger.debug(f'Readed: {s}')
             else:
                 logger.spam(f'Readed: {s}')
+                
+                    
+            if EOF_CHAR in s:
+                self.flag_eof = True
+                logger.info("EOF: EOF character has been arrived")
+                raise EOF('EOF character has been arrived')
+                    
         except EOF:
             self.flag_eof = True
             raise
