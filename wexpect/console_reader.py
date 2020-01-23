@@ -516,7 +516,7 @@ class ConsoleReaderPipe(ConsoleReaderBase):
         if avail > 0:
             resp = win32file.ReadFile(self.pipe, 4096)
             ret = resp[1]
-            return ret
+            return ret.decode()
         else:
             return ''
         
