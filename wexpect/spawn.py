@@ -249,7 +249,7 @@ class SpawnBase:
         self.delayafterterminate = 0.1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
         self.buffer = '' # This is the read buffer. See maxread.
         self.searchwindowsize = searchwindowsize # Anything before searchwindowsize point is preserved, but not searched.
-        self.interact = interact
+        self.interact_state = interact
         
 
         # If command is an int type then it may represent a file descriptor.
@@ -356,7 +356,15 @@ class SpawnBase:
         else:
             python_executable = os.path.join(os.path.dirname(sys.executable), 'python.exe')
               
-        child_class_initializator = self.get_child_class_initializator(args)
+        self.console_class_parameters.update({
+                'host_pid': self.host_pid,
+                'local_echo': self.echo,
+                'interact': self.interact_state
+                })
+        console_class_parameters_kv_pairs = [f'{k}={v}' for k,v in self.console_class_parameters.items() ]
+        console_class_parameters_str = ', '.join(console_class_parameters_kv_pairs)
+        
+        child_class_initializator = f"wexpect.{self.console_class_name}(wexpect.join_args({args}), {console_class_parameters_str});"
         
         commandLine = '"%s" %s "%s"' % (python_executable, 
                                         ' '.join(pyargs), 
@@ -817,6 +825,8 @@ class SpawnPipe(SpawnBase):
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
         logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321, host='localhost', interact=False):
         self.pipe = None
+        self.console_class_name = 'ConsoleReaderPipe'
+        self.console_class_parameters = {}
         
         super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
              searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
@@ -922,9 +932,6 @@ class SpawnPipe(SpawnBase):
                 raise            
         return len(s)
 
-    def get_child_class_initializator(self, args, **kwargs):
-        child_class_initializator = f"wexpect.ConsoleReaderPipe(wexpect.join_args({args}), {self.host_pid}, local_echo={self.echo}, interact={self.interact});"
-        return child_class_initializator
 
 class SpawnSocket(SpawnBase):
     
@@ -933,6 +940,8 @@ class SpawnSocket(SpawnBase):
         self.port = port
         self.host = host
         self.sock = None
+        self.console_class_name = 'ConsoleReaderPipe'
+        self.console_class_parameters = {'port': port}
         
         super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
              searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
@@ -996,10 +1005,6 @@ class SpawnSocket(SpawnBase):
 
         return s.decode()
 
-    def get_child_class_initializator(self, args, **kwargs):
-        child_class_initializator = f"wexpect.ConsoleReaderSocket(wexpect.join_args({args}), {self.host_pid}, port={self.port}, local_echo={self.echo}, interact={self.interact});"
-        return child_class_initializator
-    
 
 class searcher_re (object):
     """This is regular expression string search helper for the
