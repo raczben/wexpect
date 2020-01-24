@@ -162,7 +162,7 @@ class ExceptionPexpect(Exception):
     def __filter_not_wexpect(self, trace_list_item):
         """This returns True if list item 0 the string 'wexpect.py' in it. """
 
-        if trace_list_item[0].find('wexpect.py') == -1:
+        if trace_list_item[0].find('spawn.py') == -1:
             return True
         else:
             return False

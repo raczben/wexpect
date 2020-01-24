@@ -292,10 +292,11 @@ class SpawnBase:
         
         try:
             logger.info('Deleting...')
-            self.terminate()
-            self.disconnect_from_child()
-            if self.safe_exit:
-                self.wait()
+            if self.child_process is not None:
+                self.terminate()
+                self.disconnect_from_child()
+                if self.safe_exit:
+                    self.wait()
         except:
             traceback.print_exc()
             logger.warning(traceback.format_exc())
@@ -424,6 +425,10 @@ class SpawnBase:
        
     def isalive(self, console=True):
         """True if the child is still alive, false otherwise"""
+        
+        if self.child_process is None:
+            # Child process has not been started... Not alive
+            return False
         
         try:
             self.exitstatus = self.child_process.wait(timeout=0)
