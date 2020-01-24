@@ -381,7 +381,7 @@ class SpawnBase:
         logger.info(f'Console starter command:{commandLine}')
         
         _, _, self.console_pid, __otid = win32process.CreateProcess(None, commandLine, None, None, False, 
-                                                        win32process.CREATE_NEW_CONSOLE, None, None, si)
+                                                        win32process.CREATE_NEW_CONSOLE, None, self.cwd, si)
         
     def get_console_process(self, force=False):
         if force or self.console_process is None:
@@ -409,6 +409,11 @@ class SpawnBase:
                     continue
                 self.child_pid = self.child_process.pid
                 return self.child_process
+            
+    def close(self):   # File-like object.
+        """ Closes the child console."""
+        
+        self.closed = self.terminate()
     
     def terminate(self, force=False):
         """Terminate the child. Force not used. """
@@ -946,7 +951,7 @@ class SpawnSocket(SpawnBase):
         self.port = port
         self.host = host
         self.sock = None
-        self.console_class_name = 'ConsoleReaderPipe'
+        self.console_class_name = 'ConsoleReaderSocket'
         self.console_class_parameters = {'port': port}
         
         super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,

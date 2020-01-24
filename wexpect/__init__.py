@@ -11,9 +11,9 @@ from .wexpect_util import TIMEOUT
 from .console_reader import ConsoleReaderSocket
 from .console_reader import ConsoleReaderPipe
 
-from .spawn import SpawnSocket
-from .spawn import SpawnPipe
-from .spawn import run
+from .host import SpawnSocket
+from .host import SpawnPipe
+from .host import run
 
 try:
     spawn_class_name = os.environ['WEXPECT_SPAWN_CLASS']

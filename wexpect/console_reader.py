@@ -46,7 +46,6 @@ import psutil
 from io import StringIO
 
 import ctypes
-import pywintypes
 import win32console
 import win32process
 import win32con

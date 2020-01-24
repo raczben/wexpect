@@ -198,10 +198,11 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
     def test_isalive(self):
         " check isalive() before and after EOF. (True, False) "
         child = wexpect.spawn('cat')
-        assert child.isalive() is True
+        self.assertTrue(child.isalive())
         child.sendeof()
         child.expect(wexpect.EOF)
-        assert child.isalive() is False
+        time.sleep(.5)
+        self.assertFalse(child.isalive())
 
     def test_bad_type_in_expect(self):
         " expect() does not accept dictionary arguments. "
@@ -235,14 +236,14 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         # given,
         given_words = ['alpha', 'beta', 'gamma', 'delta', ]
         given_search = given_words
-        if searcher == wexpect.searcher_re:
+        if searcher == wexpect.host.searcher_re:
             given_search = [re.compile(word) for word in given_words]
         if plus is not None:
             given_search = given_search + [plus]
         search_string = searcher(given_search)
         basic_fmt = '\n    {0}: {1}'
         fmt = basic_fmt
-        if searcher is wexpect.searcher_re:
+        if searcher is wexpect.host.searcher_re:
             fmt = '\n    {0}: re.compile({1})'
         expected_output = '{0}:'.format(searcher.__name__)
         idx = 0
@@ -260,27 +261,27 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
 
     def test_searcher_as_string(self):
         " check searcher_string(..).__str__() "
-        self._test_searcher_as(wexpect.searcher_string)
+        self._test_searcher_as(wexpect.host.searcher_string)
 
     def test_searcher_as_string_with_EOF(self):
         " check searcher_string(..).__str__() that includes EOF "
-        self._test_searcher_as(wexpect.searcher_string, plus=wexpect.EOF)
+        self._test_searcher_as(wexpect.host.searcher_string, plus=wexpect.EOF)
 
     def test_searcher_as_string_with_TIMEOUT(self):
         " check searcher_string(..).__str__() that includes TIMEOUT "
-        self._test_searcher_as(wexpect.searcher_string, plus=wexpect.TIMEOUT)
+        self._test_searcher_as(wexpect.host.searcher_string, plus=wexpect.TIMEOUT)
 
     def test_searcher_re_as_string(self):
         " check searcher_re(..).__str__() "
-        self._test_searcher_as(wexpect.searcher_re)
+        self._test_searcher_as(wexpect.host.searcher_re)
 
     def test_searcher_re_as_string_with_EOF(self):
         " check searcher_re(..).__str__() that includes EOF "
-        self._test_searcher_as(wexpect.searcher_re, plus=wexpect.EOF)
+        self._test_searcher_as(wexpect.host.searcher_re, plus=wexpect.EOF)
 
     def test_searcher_re_as_string_with_TIMEOUT(self):
         " check searcher_re(..).__str__() that includes TIMEOUT "
-        self._test_searcher_as(wexpect.searcher_re, plus=wexpect.TIMEOUT)
+        self._test_searcher_as(wexpect.host.searcher_re, plus=wexpect.TIMEOUT)
 
     def test_exception_tb(self):
         " test get_trace() filters away wexpect/__init__.py calls. "
