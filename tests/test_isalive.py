@@ -52,6 +52,7 @@ class IsAliveTestCase(PexpectTestCase.PexpectTestCase):
     def test_expect_isalive_dead_after_normal_termination (self):
         p = wexpect.spawn('ls', timeout=15)
         p.expect(wexpect.EOF)
+        time.sleep(.5)
         assert not p.isalive()
 
     def test_expect_isalive_dead_after_SIGHUP(self):
@@ -77,7 +78,7 @@ class IsAliveTestCase(PexpectTestCase.PexpectTestCase):
     def test_expect_isalive_dead_after_SIGKILL(self):
         p = wexpect.spawn('cat', timeout=5)
         assert p.isalive()
-        p.kill(9)
+        p.kill()
         p.expect(wexpect.EOF)
         assert not p.isalive()
 
@@ -99,6 +100,7 @@ class IsAliveTestCase(PexpectTestCase.PexpectTestCase):
         assert p.isalive()
         p.sendeof()
         p.expect(wexpect.EOF)
+        time.sleep(.5)
         assert not p.isalive()
         assert not p.isalive()
 

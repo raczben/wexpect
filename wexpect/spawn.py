@@ -441,7 +441,8 @@ class SpawnBase:
         if child:
             self.child_process.wait()
         if console:
-            self.console_process.wait()
+            self.exitstatus = self.console_process.wait()
+        return self.exitstatus
         
     def read (self, size = -1):   # File-like object.
         """This reads at most "size" bytes from the file (less if the read hits
