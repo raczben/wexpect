@@ -122,11 +122,12 @@ __all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'which',
 # Create logger: We write logs only to file. Printing out logs are dangerous, because of the deep
 # console manipulation.
 #
+pid=os.getpid()
 logger = logging.getLogger('wexpect')
 try:
     logger_level = os.environ['WEXPECT_LOGGER_LEVEL']
     logger.setLevel(logger_level)
-    fh = logging.FileHandler('wexpect.log', 'w', 'utf-8')
+    fh = logging.FileHandler(f'wexpect_{pid}.log', 'w', 'utf-8')
     formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
@@ -1121,16 +1122,22 @@ class Wtty:
         ts = time.time()
         self.startChild(args, env)
             
+        logger.info(f"Fetch child's process and pid...")
+        
         while True:
+            logger.info(f"0")
             msg = win32gui.GetMessage(0, 0, 0)
+            logger.info(f"0b")
             childPid = msg[1][2]
             # Sometimes win32gui.GetMessage returns a bogus PID, so keep calling it
             # until we can successfully connect to the child or timeout is
             # reached
             if childPid:
                 try:
+                    logger.info(f"1")
                     self.__childProcess = win32api.OpenProcess(
                         win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, childPid)
+                    logger.info(f"2")
                     self.__conProcess = win32api.OpenProcess(
                         win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, self.conpid)
                 except pywintypes.error as e:
@@ -1140,6 +1147,8 @@ class Wtty:
                     self.pid = childPid
                     break
             time.sleep(.05)
+            
+        logger.info(f"Child's pid: {self.pid}")
         
         if not self.__childProcess:
             raise ExceptionPexpect ('The process ' + args[0] + ' could not be started.') 
@@ -1170,6 +1179,7 @@ class Wtty:
         si.wShowWindow = win32con.SW_HIDE
         # Determine the directory of wexpect.py or, if we are running 'frozen'
         # (eg. py2exe deployment), of the packed executable
+
         dirname = os.path.dirname(sys.executable 
                                   if getattr(sys, 'frozen', False) else 
                                   os.path.abspath(__file__))
@@ -1178,7 +1188,7 @@ class Wtty:
         else:
             logdir = dirname
         logdir = os.path.basename(logdir)
-        spath = [dirname]
+        spath = [os.path.dirname(dirname)]
         pyargs = ['-c']
         if getattr(sys, 'frozen', False):
             # If we are running 'frozen', add library.zip and lib\library.zip
@@ -1201,18 +1211,27 @@ class Wtty:
         # as the packed executable.
         # py2exe: The python executable can be included via setup script by 
         # adding it to 'data_files'
-        commandLine = '"%s" %s "%s"' % (os.path.join(dirname, 'python.exe') 
-                                        if getattr(sys, 'frozen', False) else 
-                                        os.path.join(os.path.dirname(sys.executable), 'python.exe'), 
-                                        ' '.join(pyargs), 
-                                        "import sys; sys.path = %r + sys.path;"
-                                        "args = %r; import wexpect;"
-                                        "wexpect.ConsoleReader(wexpect.join_args(args), %i, %i, cp=%i, logdir=%r)" % (spath, args, pid, tid, cp, logdir))
-                     
         
-        self.__oproc, _, self.conpid, self.__otid = win32process.CreateProcess(None, commandLine, None, None, False, 
-                                                                  win32process.CREATE_NEW_CONSOLE, env, None, si)
+        if getattr(sys, 'frozen', False):
+            python_executable = os.path.join(dirname, 'python.exe') 
+        else:
+            python_executable = os.path.join(os.path.dirname(sys.executable), 'python.exe')
             
+        commandLine = '"%s" %s "%s"' % (python_executable, 
+                                        ' '.join(pyargs), 
+                                        f"import sys; sys.path = {spath} + sys.path;"
+                                        f"args = {args}; import wexpect;"
+                                        f"wexpect.ConsoleReader(wexpect.join_args(args), {pid}, {tid}, cp={cp}, logdir={logdir})"
+                                        )
+                                        
+        logger.info(f'CreateProcess: {commandLine}')
+        
+        self.__oproc, x, self.conpid, self.__otid = win32process.CreateProcess(None, commandLine, None, None, False, 
+                                                                  win32process.CREATE_NEW_CONSOLE, env, None, si)
+        logger.info(f'self.__oproc: {self.__oproc}')
+        logger.info(f'x: {x}')
+        logger.info(f'self.conpid: {self.conpid}')
+        logger.info(f'self.__otid: {self.__otid}')
    
     def switchTo(self, attatched=True):
         """Releases from the current console and attatches

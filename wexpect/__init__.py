@@ -4,6 +4,11 @@ from .legacy_wexpect import TIMEOUT
 from .legacy_wexpect import spawn
 from .legacy_wexpect import run
 from .legacy_wexpect import split_command_line
+from .legacy_wexpect import join_args
+from .legacy_wexpect import ConsoleReader
 from .legacy_wexpect import __version__
+from .legacy_wexpect import searcher_string
+from .legacy_wexpect import searcher_re
 
-__all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'split_command_line', '__version__']
+__all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'split_command_line',
+'__version__', 'ConsoleReader', 'join_args', 'searcher_string', 'searcher_re']
