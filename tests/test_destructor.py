@@ -32,35 +32,34 @@ class TestCaseDestructor(PexpectTestCase.PexpectTestCase):
             return 'SKIP'
         gc.collect()
         time.sleep(2)
-        p1 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        p2 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        p3 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        p4 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        fd_t1 = (p1.child_fd,p2.child_fd,p3.child_fd,p4.child_fd)
+        p1 = wexpect.spawn('ls', port=4321)
+        p2 = wexpect.spawn('ls', port=4322)
+        p3 = wexpect.spawn('ls', port=4323)
+        p4 = wexpect.spawn('ls', port=4324)
         p1.expect(wexpect.EOF)
         p2.expect(wexpect.EOF)
         p3.expect(wexpect.EOF)
         p4.expect(wexpect.EOF)
-        p1.kill(9)
-        p2.kill(9)
-        p3.kill(9)
-        p4.kill(9)
+        p1.kill()
+        p2.kill()
+        p3.kill()
+        p4.kill()
         p1 = None
         p2 = None
         p3 = None
         p4 = None
         gc.collect()
         time.sleep(2) # Some platforms are slow at gc... Solaris!
+        
 
-        p1 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        p2 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        p3 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        p4 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        fd_t2 = (p1.child_fd,p2.child_fd,p3.child_fd,p4.child_fd)
-        p1.kill(9)
-        p2.kill(9)
-        p3.kill(9)
-        p4.kill(9)
+        p1 = wexpect.spawn('ls', port=4321)
+        p2 = wexpect.spawn('ls', port=4322)
+        p3 = wexpect.spawn('ls', port=4323)
+        p4 = wexpect.spawn('ls', port=4324)
+        p1.kill()
+        p2.kill()
+        p3.kill()
+        p4.kill()
         del (p1)
         del (p2)
         del (p3)
@@ -68,13 +67,10 @@ class TestCaseDestructor(PexpectTestCase.PexpectTestCase):
         gc.collect()
         time.sleep(2)
 
-        p1 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        p2 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        p3 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        p4 = wexpect.spawn('"%s" hello_world.py' % self.PYTHONBIN)
-        fd_t3 = (p1.child_fd,p2.child_fd,p3.child_fd,p4.child_fd)
-
-        assert (fd_t1 == fd_t2 == fd_t3), "pty file descriptors not properly garbage collected (fd_t1,fd_t2,fd_t3)=(%s,%s,%s)" % (str(fd_t1),str(fd_t2),str(fd_t3))
+        p1 = wexpect.spawn('ls', port=4321)
+        p2 = wexpect.spawn('ls', port=4322)
+        p3 = wexpect.spawn('ls', port=4323)
+        p4 = wexpect.spawn('ls', port=4324)
 
 
 if __name__ == '__main__':

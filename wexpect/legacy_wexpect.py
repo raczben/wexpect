@@ -287,7 +287,7 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
         return child_result
 
 def spawn(command, args=[], timeout=30, maxread=2000, searchwindowsize=None, logfile=None, cwd=None,
-    env=None, codepage=None, echo=True):
+    env=None, codepage=None, echo=True, **kwargs):
     """This is the most essential function. The command parameter may be a string that
     includes a command and any arguments to the command. For example::
 
@@ -790,7 +790,7 @@ class spawn_windows ():
                 
         return False
 
-    def kill(self, sig):
+    def kill(self, sig=signal.SIGTERM):
         """Sig == sigint for ctrl-c otherwise the child is terminated."""
         
         if not self.isalive():
