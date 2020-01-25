@@ -42,9 +42,15 @@ import traceback
 import sys
 import os
 import logging
+import signal
 
 # platform does not define VEOF so assume CTRL-D
 EOF_CHAR = b'\x04'
+
+SIGNAL_CHARS = {
+    signal.SIGTERM:  b'\x011', # Device control 1
+    signal.SIGINT:   b'\x012', # Device control 2
+                }
 
 SPAM = 5
 logging.addLevelName(SPAM, "SPAM")

@@ -1125,19 +1125,15 @@ class Wtty:
         logger.info(f"Fetch child's process and pid...")
         
         while True:
-            logger.info(f"0")
             msg = win32gui.GetMessage(0, 0, 0)
-            logger.info(f"0b")
             childPid = msg[1][2]
             # Sometimes win32gui.GetMessage returns a bogus PID, so keep calling it
             # until we can successfully connect to the child or timeout is
             # reached
             if childPid:
                 try:
-                    logger.info(f"1")
                     self.__childProcess = win32api.OpenProcess(
                         win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, childPid)
-                    logger.info(f"2")
                     self.__conProcess = win32api.OpenProcess(
                         win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, self.conpid)
                 except pywintypes.error as e:

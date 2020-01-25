@@ -43,6 +43,7 @@ import os
 import traceback
 import pkg_resources 
 import psutil
+import signal
 from io import StringIO
 
 import ctypes
@@ -56,6 +57,7 @@ import socket
 
 from .wexpect_util import init_logger
 from .wexpect_util import EOF_CHAR
+from .wexpect_util import SIGNAL_CHARS
 
 # 
 # System-wide constants
@@ -109,6 +111,7 @@ class ConsoleReaderBase:
         self.host_process = psutil.Process(host_pid)
         self.child_process = None
         self.child_pid = None
+        self.enable_signal_chars = True
         
         logger.info("ConsoleReader started")
         
@@ -129,6 +132,8 @@ class ConsoleReaderBase:
                 self.__childProcess, _, self.child_pid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
                                                                              0, None, None, si)
                 self.child_process = psutil.Process(self.child_pid)
+                
+                logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
                 
             except:
                 logger.info(traceback.format_exc())
@@ -176,6 +181,11 @@ class ConsoleReaderBase:
                 logger.debug(f'get_from_host: {s}')
             else:
                 logger.spam(f'get_from_host: {s}')
+            if self.enable_signal_chars:
+                for sig,char in SIGNAL_CHARS.items():
+                    if char in s:
+                        self.child_process.send_signal(sig)
+            s = s.decode()
             self.write(s)
             
             if cursorPos.Y > maxconsoleY and not paused:
@@ -201,7 +211,7 @@ class ConsoleReaderBase:
     def isalive(self, process):
         """True if the child is still alive, false otherwise"""
         try:
-            process.wait(timeout=0)
+            self.exitstatus = process.wait(timeout=0)
             return False
         except psutil.TimeoutExpired:
             return True
@@ -481,7 +491,7 @@ class ConsoleReaderSocket(ConsoleReaderBase):
             # timeout exception is setup
             if err == 'timed out':
                 logger.debug('recv timed out, retry later')
-                return ''
+                return b''
             else:
                 raise
         else:
@@ -489,7 +499,7 @@ class ConsoleReaderSocket(ConsoleReaderBase):
                 raise Exception('orderly shutdown on server end')
             else:
                 # got a message do something :)
-                return msg.decode()
+                return msg
     
     
 class ConsoleReaderPipe(ConsoleReaderBase):
@@ -526,6 +536,6 @@ class ConsoleReaderPipe(ConsoleReaderBase):
         if avail > 0:
             resp = win32file.ReadFile(self.pipe, 4096)
             ret = resp[1]
-            return ret.decode()
+            return ret
         else:
-            return ''
+            return b''

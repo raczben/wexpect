@@ -89,6 +89,7 @@ from .wexpect_util import TIMEOUT
 from .wexpect_util import split_command_line
 from .wexpect_util import init_logger
 from .wexpect_util import EOF_CHAR
+from .wexpect_util import SIGNAL_CHARS
 
 logger = logging.getLogger('wexpect')
         
@@ -389,26 +390,10 @@ class SpawnBase:
         return self.console_process
     
     def get_child_process(self, force=False):
-        '''Fetches and returns the child process (and pid)
-        
-        The console starts the *real* child. This function fetches this *real* child's process ID
-        and process handle. If the console process is slower,(the OS does not grant enough CPU for
-        that), the child, cannot be started, when we reach this function, therefore the
-        `self.get_console_process().children()` line will return an empty list. So we ask console's child
-        in a loop, while, we found a (the) child.
-        This loop cannot be an infinite loop. If the console's process has error before/during
-        starting the child. `self.get_console_process().children()` will throw error.
-        '''
         if force or self.console_process is None:
-            while True:
-                children = self.get_console_process().children()
-                try:
-                    self.child_process = children[0]
-                except IndexError:
-                    time.sleep(.1)
-                    continue
-                self.child_pid = self.child_process.pid
-                return self.child_process
+            self.child_process = self.get_console_process()
+            self.child_pid = self.child_process.pid
+            return self.child_process
             
     def close(self):   # File-like object.
         """ Closes the child console."""
@@ -444,7 +429,7 @@ class SpawnBase:
         """Sig == sigint for ctrl-c otherwise the child is terminated."""
         try:
             self.child_process.send_signal(sig)
-        except psutil._exceptions.NoSuchProcess as e:
+        except psutil.NoSuchProcess as e:
             logger.info('Child has already died. %s', e)
     
     def wait(self, child=True, console=True):
@@ -562,8 +547,7 @@ class SpawnBase:
         """This is like send(), but it adds a line feed (os.linesep). This
         returns the number of bytes written. """
 
-        n = self.send(s)
-        n = n + self.send(b'\r\n')
+        n = self.send(s+'\r\n')
         return n
 
     def sendeof(self):
@@ -580,7 +564,18 @@ class SpawnBase:
         char = chr(4)
         self.send(char)
         
-    def send(self):
+    def send(self, s, delaybeforesend=None):
+        """Virtual definition
+        """
+        if delaybeforesend is None:
+            delaybeforesend = self.delaybeforesend
+            
+        if delaybeforesend:
+            time.sleep(delaybeforesend)
+            
+        return self._send_impl(s)
+        
+    def _send_impl(self, s):
         """Virtual definition
         """
         raise NotImplementedError
@@ -773,6 +768,8 @@ class SpawnBase:
             end_time = time.time() + timeout 
         if searchwindowsize == -1:
             searchwindowsize = self.searchwindowsize
+            
+        logger.debug(f'searcher: {searcher}')
 
         try:
             incoming = self.buffer
@@ -916,14 +913,12 @@ class SpawnPipe(SpawnBase):
             else:
                 raise
     
-    def send(self, s):
+    def _send_impl(self, s):
         """This sends a string to the child process. This returns the number of
         bytes written. If a log file was set then the data is also written to
         the log. """
         if isinstance(s, str):
             s = str.encode(s)
-        if self.delaybeforesend:
-            time.sleep(self.delaybeforesend)
         try:
             if s:
                 logger.debug(f"Writing: {s}")
@@ -942,6 +937,14 @@ class SpawnPipe(SpawnBase):
             else:
                 raise            
         return len(s)
+    
+    def kill(self, sig=signal.SIGTERM):
+        """Sig == sigint for ctrl-c otherwise the child is terminated."""
+        try:
+            logger.info(f'Sending kill signal: {sig}')
+            self.send(SIGNAL_CHARS[sig])
+        except EOF as e:
+            logger.info(e)
 
 
 class SpawnSocket(SpawnBase):
@@ -957,14 +960,12 @@ class SpawnSocket(SpawnBase):
         super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
              searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
         
-    def send(self, s):
+    def _send_impl(self, s):
         """This sends a string to the child process. This returns the number of
         bytes written. If a log file was set then the data is also written to
         the log. """
         if isinstance(s, str):
             s = str.encode(s)
-        if self.delaybeforesend:
-            time.sleep(self.delaybeforesend)
         self.sock.sendall(s)
         return len(s)
          
@@ -1015,7 +1016,15 @@ class SpawnSocket(SpawnBase):
             return ''
 
         return s.decode()
-
+    
+    def kill(self, sig=signal.SIGTERM):
+        """Sig == sigint for ctrl-c otherwise the child is terminated."""
+        try:
+            logger.info(f'Sending kill signal: {sig}')
+            self.send(SIGNAL_CHARS[sig])
+        except EOF as e:
+            logger.info(e)
+       
 
 class searcher_re (object):
     """This is regular expression string search helper for the
