@@ -198,10 +198,11 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
     def test_isalive(self):
         " check isalive() before and after EOF. (True, False) "
         child = wexpect.spawn('cat')
-        assert child.isalive() is True
+        self.assertTrue(child.isalive())
         child.sendeof()
         child.expect(wexpect.EOF)
         assert child.isalive() is False
+        self.assertFalse(child.isalive())
 
     def test_bad_type_in_expect(self):
         " expect() does not accept dictionary arguments. "
