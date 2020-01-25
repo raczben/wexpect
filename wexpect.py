@@ -1590,19 +1590,19 @@ class ConsoleReader: # pragma: no cover
    
     def __init__(self, path, pid, tid, env = None, cp=None, logdir=None):
         self.logdir = logdir
-        logger.debug('=' * 80, 'consolereader', logdir)
-        logger.debug("OEM code page: %s" % windll.kernel32.GetOEMCP(), 'consolereader', logdir)
-        logger.debug("ANSI code page: %s" % windll.kernel32.GetACP(), 'consolereader', logdir)
-        logger.debug("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP(), 'consolereader', logdir)
+        logger.info('=' * 80)
+        logger.info("OEM code page: %s" % windll.kernel32.GetOEMCP())
+        logger.info("ANSI code page: %s" % windll.kernel32.GetACP())
+        logger.info("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP())
         if cp:
-            logger.debug("Setting console output code page to %s" % cp, 'consolereader', logdir)
+            logger.info("Setting console output code page to %s" % cp)
             try:
                 win32console.SetConsoleOutputCP(cp)
             except Exception as e:
-                logger.debug(e, 'consolereader', logdir)
+                logger.info(e)
             else:
-                logger.debug("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP(), 'consolereader', logdir)
-        logger.debug('Spawning %s' % path, 'consolereader', logdir)
+                logger.info("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP())
+        logger.info('Spawning %s' % path)
         try:
             try:
                 consout = self.getConsoleOut()
@@ -1612,7 +1612,7 @@ class ConsoleReader: # pragma: no cover
                 self.__childProcess, _, childPid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
                                                                              0, None, None, si)
             except Exception as e:
-                logger.debug(e, 'consolereader', logdir)
+                logger.info(e)
                 time.sleep(.1)
                 win32api.PostThreadMessage(int(tid), win32con.WM_USER, 0, 0)
                 sys.exit()
@@ -1638,7 +1638,7 @@ class ConsoleReader: # pragma: no cover
                         # Don't log. Child process will exit regardless when 
                         # calling sys.exit
                         if e.args[0] != winerror.ERROR_ACCESS_DENIED:
-                            logger.debug(e, 'consolereader', logdir)
+                            logger.info(e)
                     sys.exit()
                 
                 if cursorPos.Y > maxconsoleY and not paused:
@@ -1651,12 +1651,12 @@ class ConsoleReader: # pragma: no cover
                                     
                 time.sleep(.1)
         except Exception as e:
-            logger.debug(e, 'consolereader', logdir)
+            logger.info(e)
             time.sleep(.1)
         
     
     def handler(self, sig):       
-        logger.debug(sig, 'consolereader', logdir)
+        logger.info(sig)
         return False
 
     def getConsoleOut(self):
