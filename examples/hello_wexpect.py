@@ -12,7 +12,8 @@ child = wexpect.spawn('cmd.exe')
 child.expect('>')
 
 # Prints the cmd's start message
-print(child.before)
+print(child.before, end='')
+print(child.after, end='')
 
 # run list directory command
 child.sendline('ls')
@@ -21,7 +22,8 @@ child.sendline('ls')
 child.expect('>')
 
 # Prints content of the directory
-print(child.before)
+print(child.before, end='')
+print(child.after, end='')
 
 # Exit from cmd
 child.sendline('exit')
