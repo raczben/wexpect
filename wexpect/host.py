@@ -413,8 +413,11 @@ class SpawnBase:
                 
         return False
        
-    def isalive(self, console=True):
+    def isalive(self, trust_console=True):
         """True if the child is still alive, false otherwise"""
+        if trust_console:
+            if self.flag_eof:
+                return False
         
         if self.child_process is None:
             # Child process has not been started... Not alive
@@ -839,6 +842,8 @@ class SpawnPipe(SpawnBase):
         super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
              searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
     
+        self.delayafterterminate = 1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
+        
     def connect_to_child(self):
         pipe_name = 'wexpect_{}'.format(self.console_pid)
         pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
@@ -959,6 +964,8 @@ class SpawnSocket(SpawnBase):
         
         super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
              searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
+        
+        self.delayafterterminate = 1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
         
     def _send_impl(self, s):
         """This sends a string to the child process. This returns the number of

@@ -150,7 +150,7 @@ class ConsoleReaderBase:
         finally:
             try:
                 self.terminate_child()
-                time.sleep(.1) 
+                time.sleep(.01) 
                 self.send_to_host(self.readConsoleToCursor())
                 self.sendeof()
                 time.sleep(.1)
