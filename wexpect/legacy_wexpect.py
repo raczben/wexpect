@@ -66,23 +66,18 @@ Wexpect Copyright (c) 2019 Benedek Racz
 #
 import sys
 if sys.platform != 'win32': # pragma: no cover
-    raise ImportError (str(e) + """
-sys.platform != 'win32': Wexpect supports only Windows.
+    raise ImportError ("""sys.platform != 'win32': Wexpect supports only Windows.
 Pexpect is intended for UNIX-like operating systems.""")
 
 #
 # Import built in modules
 #
-import warnings
 import logging
 import os
 import time
 import re
-import select
 import shutil
-import struct
 import types
-import errno
 import traceback
 import signal
 import pkg_resources 
@@ -91,8 +86,6 @@ from io import StringIO
 try:
     from ctypes import windll
     import pywintypes
-    from win32com.shell.shellcon import CSIDL_APPDATA
-    from win32com.shell.shell import SHGetSpecialFolderPath
     import win32console
     import win32process
     import win32con
@@ -131,7 +124,7 @@ try:
     formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
-except KeyError as _:
+except KeyError:
     logger.setLevel(logging.ERROR)
 
 # Test the logger
@@ -271,12 +264,13 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
                 elif callback_result:
                     break
             else:
+                logger.info('TypeError: The callback must be a string or function type.')
                 raise TypeError ('The callback must be a string or function type.')
             event_count = event_count + 1
-        except TIMEOUT as e:
+        except TIMEOUT:
             child_result_list.append(child.before)
             break
-        except EOF as e:
+        except EOF:
             child_result_list.append(child.before)
             break
     child_result = ''.join(child_result_list)
@@ -487,9 +481,11 @@ class spawn_windows ():
 
         # If command is an int type then it may represent a file descriptor.
         if type(command) == type(0):
+            logger.info('ExceptionPexpect: Command is an int type. If this is a file descriptor then maybe you want to use fdpexpect.fdspawn which takes an existing file descriptor instead of a command string.')
             raise ExceptionPexpect ('Command is an int type. If this is a file descriptor then maybe you want to use fdpexpect.fdspawn which takes an existing file descriptor instead of a command string.')
 
         if type (args) != type([]):
+            logger.info('TypeError: The argument, args, must be a list.')
             raise TypeError ('The argument, args, must be a list.')
    
         if args == []:
@@ -502,6 +498,7 @@ class spawn_windows ():
             
         command_with_path = shutil.which(self.command)
         if command_with_path is None:
+           logger.info('ExceptionPexpect: The command was not found or was not executable: %s.' % self.command)
            raise ExceptionPexpect ('The command was not found or was not executable: %s.' % self.command)
         self.command = command_with_path
         self.args[0] = self.command
@@ -537,6 +534,7 @@ class spawn_windows ():
         
         self.closed = self.terminate(force)
         if not self.closed:
+            logger.info('ExceptionPexpect: close() could not terminate the child using terminate()')
             raise ExceptionPexpect ('close() could not terminate the child using terminate()')
         self.closed = True
 
@@ -682,6 +680,7 @@ class spawn_windows ():
         This is a wrapper around Wtty.read(). """
 
         if self.closed:
+            logger.info('ValueError: I/O operation on closed file in read_nonblocking().')
             raise ValueError ('I/O operation on closed file in read_nonblocking().')
         
         try:
@@ -691,7 +690,8 @@ class spawn_windows ():
             # the last output.
             # The flag_child_finished flag shows that this is the second trial, where we raise the EOF.
             if self.flag_child_finished:
-                raise EOF('self.self.flag_child_finished')
+                logger.info('EOF: self.flag_child_finished')
+                raise EOF('self.flag_child_finished')
             if not self.isalive():
                 self.flag_child_finished = True
             s = self.wtty.read_nonblocking(size)
@@ -820,11 +820,13 @@ class spawn_windows ():
         """Determines if the child is still alive."""
         
         if self.terminated:
+            logger.debug('self.terminated is true')
             return False
         
         if self.wtty.isalive():
             return True
         else:
+            logger.debug('self.wtty.isalive() is false')
             self.exitstatus = win32process.GetExitCodeProcess(self.wtty.getchild())
             self.status = (self.pid, self.exitstatus << 8)  # left-shift exit status by 8 bits like os.waitpid
             self.terminated = True
@@ -874,6 +876,7 @@ class spawn_windows ():
             elif type(p) is type(re.compile('')):
                 compiled_pattern_list.append(p)
             else:
+                logger.info('TypeError: Argument must be one of StringTypes, EOF, TIMEOUT, SRE_Pattern, or a list of those type. %s' % str(type(p)))
                 raise TypeError ('Argument must be one of StringTypes, EOF, TIMEOUT, SRE_Pattern, or a list of those type. %s' % str(type(p)))
 
         return compiled_pattern_list
@@ -991,6 +994,7 @@ class spawn_windows ():
             
         for p in pattern_list:
             if type(p) not in (str,) and p not in (TIMEOUT, EOF):
+                logger.info('TypeError: Argument must be one of StringTypes, EOF, TIMEOUT, or a list of those type. %s' % str(type(p)))
                 raise TypeError ('Argument must be one of StringTypes, EOF, TIMEOUT, or a list of those type. %s' % str(type(p)))
             
         return self.expect_loop(searcher_string(pattern_list), timeout, searchwindowsize)
@@ -1026,6 +1030,7 @@ class spawn_windows ():
                     return self.match_index
                 # No match at this point
                 if timeout is not None and end_time < time.time():
+                    logger.info('TIMEOUT: Timeout exceeded in expect_any().')
                     raise TIMEOUT ('Timeout exceeded in expect_any().')
                 # Still have time left, so read more data
                 c = self.read_nonblocking(self.maxread)
@@ -1044,6 +1049,7 @@ class spawn_windows ():
             else:
                 self.match = None
                 self.match_index = None
+                logger.info(str(e) + '\n' + str(self))
                 raise EOF (str(e) + '\n' + str(self))
         except TIMEOUT as e:
             self.buffer = incoming
@@ -1057,6 +1063,7 @@ class spawn_windows ():
             else:
                 self.match = None
                 self.match_index = None
+                logger.info(str(e) + '\n' + str(self))
                 raise TIMEOUT (str(e) + '\n' + str(self))
         except:
             self.before = incoming
@@ -1136,7 +1143,7 @@ class Wtty:
                         win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, childPid)
                     self.__conProcess = win32api.OpenProcess(
                         win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, self.conpid)
-                except pywintypes.error as e:
+                except pywintypes.error:
                     if time.time() > ts + self.timeout:
                         break
                 else:
@@ -1147,6 +1154,7 @@ class Wtty:
         logger.info(f"Child's pid: {self.pid}")
         
         if not self.__childProcess:
+            logger.info('ExceptionPexpect: The process ' + args[0] + ' could not be started.')
             raise ExceptionPexpect ('The process ' + args[0] + ' could not be started.') 
         
                                                                                                               
@@ -1244,6 +1252,7 @@ class Wtty:
             # risk is low.)
             if not self.isalive(console=True):
                 # When child has finished...
+                logger.info('EOF: End Of File (EOF) in switchTo().')
                 raise EOF('End Of File (EOF) in switchTo().')
             
             win32console.AttachConsole(self.conpid)
@@ -1257,11 +1266,13 @@ class Wtty:
             # In case of any error: We "switch back" (attach) our original console, then raise the
             # error.
             self.switchBack()
+            logger.info('EOF: End Of File (EOF) in switchTo().')
             raise EOF('End Of File (EOF) in switchTo().')
         except:
             # In case of any error: We "switch back" (attach) our original console, then raise the
             # error.
             self.switchBack()
+            logger.info(traceback.format_exc())
             raise
             
             
@@ -1605,12 +1616,12 @@ class ConsoleReader: # pragma: no cover
    
     def __init__(self, path, pid, tid, env = None, cp=None, logdir=None):
         self.logdir = logdir
-        logger.info('=' * 80)
-        logger.info("OEM code page: %s" % windll.kernel32.GetOEMCP())
-        logger.info("ANSI code page: %s" % windll.kernel32.GetACP())
-        logger.info("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP())
+        logger.info('consolepid: {}'.format(os.getpid()))
+        logger.debug("OEM code page: %s" % windll.kernel32.GetOEMCP())
+        logger.debug("ANSI code page: %s" % windll.kernel32.GetACP())
+        logger.debug("Console output code page: %s" % windll.kernel32.GetConsoleOutputCP())
         if cp:
-            logger.info("Setting console output code page to %s" % cp)
+            logger.debug("Setting console output code page to %s" % cp)
             try:
                 win32console.SetConsoleOutputCP(cp)
             except Exception as e:
@@ -1626,8 +1637,9 @@ class ConsoleReader: # pragma: no cover
                 si = win32process.GetStartupInfo()
                 self.__childProcess, _, childPid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
                                                                              0, None, None, si)
-            except Exception as e:
-                logger.info(e)
+                logger.info('childPid: {}  host_pid: {}'.format(childPid, pid))
+            except Exception:
+                logger.info(traceback.format_exc())
                 time.sleep(.1)
                 win32api.PostThreadMessage(int(tid), win32con.WM_USER, 0, 0)
                 sys.exit()
@@ -1654,6 +1666,7 @@ class ConsoleReader: # pragma: no cover
                         # calling sys.exit
                         if e.args[0] != winerror.ERROR_ACCESS_DENIED:
                             logger.info(e)
+                    logger.info('Exiting...')
                     sys.exit()
                 
                 if cursorPos.Y > maxconsoleY and not paused:
