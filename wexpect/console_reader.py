@@ -41,7 +41,6 @@ import time
 import logging
 import os
 import traceback
-import pkg_resources 
 import psutil
 import signal
 from io import StringIO
@@ -66,11 +65,6 @@ screenbufferfillchar = '\4'
 maxconsoleY = 8000
 default_port = 4321
 
-# The version is handled by the package: pbr, which derives the version from the git tags.
-try:
-    __version__ = pkg_resources.require("wexpect")[0].version
-except: # pragma: no cover
-    __version__ = '0.0.1.unkowndev0'
 
 #
 # Create logger: We write logs only to file. Printing out logs are dangerous, because of the deep
@@ -168,10 +162,11 @@ class ConsoleReaderBase:
             if not self.isalive(self.host_process):
                 logger.info('Host process has been died.')
                 return
-                
-            if win32process.GetExitCodeProcess(self.__childProcess) != win32con.STILL_ACTIVE:
-                logger.info('Child finished.')
-                return
+            
+            self.child_exitstatus = win32process.GetExitCodeProcess(self.__childProcess)
+            if self.child_exitstatus != win32con.STILL_ACTIVE:
+                logger.info(f'Child finished with code: {self.child_exitstatus}')
+                return 
             
             consinfo = self.consout.GetConsoleScreenBufferInfo()
             cursorPos = consinfo['CursorPosition']

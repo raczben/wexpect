@@ -34,7 +34,7 @@ from . import PexpectTestCase
 
 class InteractTestCase(PexpectTestCase.PexpectTestCase):
 
-    @unittest.skipIf(not hasattr(wexpect.spawn, 'interact'), "spawn does not support runtime interact switching.")
+    @unittest.skipIf(not (hasattr(wexpect, 'legacy_wexpect')) or (hasattr(wexpect.spawn, 'interact')), "spawn does not support runtime interact switching.")
     def test_interact(self):
         # Path of cmd executable:
         cmd_exe = 'cmd'
@@ -57,7 +57,7 @@ class InteractTestCase(PexpectTestCase.PexpectTestCase):
             
         self.assertEqual('hello', p.before.splitlines()[1])
     
-    @unittest.skipIf(not hasattr(wexpect.spawn, 'interact'), "spawn does not support runtime interact switching.")
+    @unittest.skipIf(not (hasattr(wexpect, 'legacy_wexpect')) or (hasattr(wexpect.spawn, 'interact')), "spawn does not support runtime interact switching.")
     def test_interact_dead(self):
         # Path of cmd executable:
         echo = 'echo hello'

@@ -87,7 +87,7 @@ class RunFuncTestCase(PexpectTestCase.PexpectTestCase):
     def test_run_bad_exitstatus(self):
         (the_new_way, exitstatus) = self.runfunc(
             'ls -l /najoeufhdnzkxjd', withexitstatus=1)
-        assert exitstatus != 0
+        self.assertNotEqual(exitstatus, 0)
 
     def test_run_event_as_string(self):
         re_flags =  re.DOTALL | re.MULTILINE

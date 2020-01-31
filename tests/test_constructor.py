@@ -34,6 +34,7 @@ class TestCaseConstructor(PexpectTestCase.PexpectTestCase):
         time.sleep(p1.delayafterterminate)
         p2 = wexpect.spawn('uname', ['-m', '-n', '-p', '-r', '-s', '-v'], timeout=5)
         p2.expect(wexpect.EOF)
+        time.sleep(p1.delayafterterminate)
         self.assertEqual(p1.before, p2.before)
         self.assertEqual(str(p1).splitlines()[1:9], str(p2).splitlines()[1:9])
         

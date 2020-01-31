@@ -21,10 +21,8 @@ wexpect LICENSE
 import unittest
 import sys
 import re
-import signal
-import time
-import tempfile
 import os
+import time
 
 import wexpect
 from . import PexpectTestCase
@@ -88,7 +86,11 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         child.readline().rstrip()
         self.assertEqual(child.readline().rstrip(), 'delta')
         child.expect(wexpect.EOF)
-        assert not child.isalive()
+        if type(child).__name__ in ['SpawnPipe', 'SpawnSocket']:
+            time.sleep(child.delayafterterminate)
+            assert not child.isalive(trust_console=False)
+        else:
+            assert not child.isalive()
         self.assertEqual(child.exitstatus, 0)
 
     def test_iter(self):
@@ -110,7 +112,11 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         page = ''.join(child.readlines()).replace(_CAT_EOF, '')
         self.assertEqual(page, '\r\nabc\r\n\r\n123\r\n')
         child.expect(wexpect.EOF)
-        assert not child.isalive()
+        if type(child).__name__ in ['SpawnPipe', 'SpawnSocket']:
+            time.sleep(child.delayafterterminate)
+            assert not child.isalive(trust_console=False)
+        else:
+            assert not child.isalive()
         self.assertEqual(child.exitstatus, 0)
 
     def test_write(self):

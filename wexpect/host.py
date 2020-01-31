@@ -158,10 +158,11 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
     pass data to a callback function through run() through the locals
     dictionary passed to a callback. """
 
+    from .__init__ import spawn
     if timeout == -1:
-        child = SpawnPipe(command, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
+        child = spawn(command, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
     else:
-        child = SpawnPipe(command, timeout=timeout, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
+        child = spawn(command, timeout=timeout, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
     if events is not None:
         patterns = list(events.keys())
         responses = list(events.values())
@@ -366,7 +367,7 @@ class SpawnBase:
         console_class_parameters_kv_pairs = [f'{k}={v}' for k,v in self.console_class_parameters.items() ]
         console_class_parameters_str = ', '.join(console_class_parameters_kv_pairs)
         
-        child_class_initializator = f"wexpect.{self.console_class_name}(wexpect.join_args({args}), {console_class_parameters_str});"
+        child_class_initializator = f"cons = wexpect.{self.console_class_name}(wexpect.join_args({args}), {console_class_parameters_str});"
         
         commandLine = '"%s" %s "%s"' % (python_executable, 
                                         ' '.join(pyargs), 
@@ -376,7 +377,8 @@ class SpawnBase:
                                         "import time;"
                                         "wexpect.console_reader.logger.info('loggerStart.');"
                                         f"{child_class_initializator}"
-                                        "wexpect.console_reader.logger.info('Console finished2.');"
+                                        "wexpect.console_reader.logger.info(f'Console finished2. {cons.child_exitstatus}');"
+                                        "sys.exit(cons.child_exitstatus)"
                                         )
         
         logger.info(f'Console starter command:{commandLine}')
@@ -425,6 +427,7 @@ class SpawnBase:
         
         try:
             self.exitstatus = self.child_process.wait(timeout=0)
+            logger.info(f'exitstatus: {self.exitstatus}')
         except psutil.TimeoutExpired:
             return True
     
@@ -435,11 +438,13 @@ class SpawnBase:
         except psutil.NoSuchProcess as e:
             logger.info('Child has already died. %s', e)
     
-    def wait(self, child=True, console=True):
+    def wait(self, child=True, console=False):
         if child:
-            self.child_process.wait()
+            self.exitstatus = self.child_process.wait()
+            logger.info(f'exitstatus: {self.exitstatus}')
         if console:
             self.exitstatus = self.console_process.wait()
+            logger.info(f'exitstatus: {self.exitstatus}')
         return self.exitstatus
         
     def read (self, size = -1):   # File-like object.
@@ -834,7 +839,7 @@ class SpawnBase:
 class SpawnPipe(SpawnBase):
     
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
-        logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321, host='localhost', interact=False):
+        logfile=None, cwd=None, env=None, codepage=None, echo=True, interact=False, **kwargs):
         self.pipe = None
         self.console_class_name = 'ConsoleReaderPipe'
         self.console_class_parameters = {}
@@ -948,6 +953,7 @@ class SpawnPipe(SpawnBase):
         try:
             logger.info(f'Sending kill signal: {sig}')
             self.send(SIGNAL_CHARS[sig])
+            self.terminated = True
         except EOF as e:
             logger.info(e)
 
@@ -955,7 +961,7 @@ class SpawnPipe(SpawnBase):
 class SpawnSocket(SpawnBase):
     
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
-        logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321, host='localhost', interact=False):
+        logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321, host='127.0.0.1', interact=False):
         self.port = port
         self.host = host
         self.sock = None
