@@ -341,7 +341,9 @@ class ConsoleReaderBase:
                 readlen = 4000
             endPoint = self.getCoord(startOff + readlen)
 
+            logger.spam(f'readlen: {readlen}  startCo: {startCo}')
             s = self.consout.ReadConsoleOutputCharacter(readlen, startCo)
+            logger.spam(f'ReadConsoleOutputCharacter:{s}')
             self.lastRead += len(s)
             self.totalRead += len(s)
             buff.append(s)
