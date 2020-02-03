@@ -42,6 +42,7 @@ import logging
 import os
 import traceback
 import psutil
+import signal
 from io import StringIO
 
 import ctypes
@@ -60,7 +61,7 @@ from .wexpect_util import SIGNAL_CHARS
 # 
 # System-wide constants
 #    
-screenbufferfillchar = '\0'
+screenbufferfillchar = '\4'
 maxconsoleY = 8000
 default_port = 4321
 
@@ -79,9 +80,8 @@ class ConsoleReaderBase:
     This class initialize the console starts the child in it and reads the console periodically.
     """
 
-    def __init__(self, path, host_pid=None, cp=None, window_size_x=80, window_size_y=25,
-                 buffer_size_x=80, buffer_size_y=16000, local_echo=True, interact=False,
-                 connect_to_host=True, **kwargs):
+    def __init__(self, path, host_pid, cp=None, window_size_x=80, window_size_y=25,
+                 buffer_size_x=80, buffer_size_y=16000, local_echo=True, interact=False, **kwargs):
         """Initialize the console starts the child in it and reads the console periodically.        
 
         Args:
@@ -102,15 +102,12 @@ class ConsoleReaderBase:
         self.local_echo = local_echo
         self.console_pid = os.getpid()
         self.host_pid = host_pid
+        self.host_process = psutil.Process(host_pid)
         self.child_process = None
         self.child_pid = None
         self.enable_signal_chars = True
-        self.host_process = None
         
-        if self.host_pid is not None:
-            self.host_process = psutil.Process(host_pid)
-        
-        logger.info("ConsoleReader started")
+        logger.info(f"ConsoleReader started: {self.__class__.__name__}")
         
         if cp:
             try:
@@ -121,8 +118,7 @@ class ConsoleReaderBase:
                 logger.info(e)
                 
         try:
-            if connect_to_host:
-                self.create_connection(**kwargs)
+            self.create_connection(**kwargs)
             logger.info('Spawning %s' % path)
             try:
                 self.initConsole()
@@ -163,7 +159,7 @@ class ConsoleReaderBase:
         paused = False
         
         while True:
-            if not self.isalive_host():
+            if not self.isalive(self.host_process):
                 logger.info('Host process has been died.')
                 return
             
@@ -207,13 +203,10 @@ class ConsoleReaderBase:
             logger.info('The process has already died.')
         return
         
-    def isalive_host(self):
+    def isalive(self, process):
         """True if the child is still alive, false otherwise"""
         try:
-            if self.host_pid is None:
-                # Standalone mode: no host
-                return True
-            self.host_exitstatus = self.host_process.wait(timeout=0)
+            self.exitstatus = process.wait(timeout=0)
             return False
         except psutil.TimeoutExpired:
             return True
@@ -348,9 +341,7 @@ class ConsoleReaderBase:
                 readlen = 4000
             endPoint = self.getCoord(startOff + readlen)
 
-            logger.spam(f'readlen: {readlen}  startCo: {startCo}')
             s = self.consout.ReadConsoleOutputCharacter(readlen, startCo)
-            logger.spam(f'ReadConsoleOutputCharacter:{s}')
             self.lastRead += len(s)
             self.totalRead += len(s)
             buff.append(s)
@@ -387,6 +378,7 @@ class ConsoleReaderBase:
         logger.spam('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
         
         raw = self.readConsole(self.__currentReadCo, cursorPos)
+        logger.debug('Read: %r' % raw)
         rawlist = []
         while raw:
             rawlist.append(raw[:self.__consSize.X])
@@ -507,11 +499,6 @@ class ConsoleReaderSocket(ConsoleReaderBase):
     
     
 class ConsoleReaderPipe(ConsoleReaderBase):
-    def __init__(self, **kwargs):
-        self.pipe = None
-        super().__init__(**kwargs)
-    
-        
     def create_connection(self, **kwargs):
         pipe_name = 'wexpect_{}'.format(self.console_pid)
         pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
@@ -537,12 +524,9 @@ class ConsoleReaderPipe(ConsoleReaderBase):
             logger.debug(f'Sending msg: {msg}')
         else:
             logger.spam(f'Sending msg: {msg}')
-        if self.pipe:
-            win32file.WriteFile(self.pipe, msg)
+        win32file.WriteFile(self.pipe, msg)
     
     def get_from_host(self):
-        if self.pipe is None:
-            return b''
         data, avail, bytes_left = win32pipe.PeekNamedPipe(self.pipe, 4096)
         logger.spam(f'data: {data}  avail:{avail}  bytes_left{bytes_left}')
         if avail > 0:
@@ -551,20 +535,3 @@ class ConsoleReaderPipe(ConsoleReaderBase):
             return ret
         else:
             return b''
-
-def main():
-    import sys
-    logger.info('loggerStart.')
-    cmd = sys.argv[1]
-    try:
-        host_pid = int(sys.argv[2])
-    except:
-        host_pid = None
-    print(f'cmd: {cmd}')
-    print(f'host_pid: {host_pid}')
-    cons = ConsoleReaderPipe(path=cmd, host_pid=host_pid, connect_to_host=False)
-    logger.info(f'Console finished2. {cons.child_exitstatus}')
-    sys.exit(cons.child_exitstatus)
-    
-if __name__ == "__main__":
-    main()

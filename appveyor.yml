@@ -27,7 +27,8 @@ install:
 
 test_script:
   - cmd: set WEXPECT_SPAWN_CLASS=SpawnPipe
-  - cmd: C:\\Python37\\python -m wexpect.console_reader "python -Wi tests\\list100.py"
+  - cmd: set WEXPECT_LOGGER_LEVEL=DEBUG
+  - cmd: C:\\Python37\\python  issues\appveyor.py
   
 after_test:
   - python dump_logs.py 

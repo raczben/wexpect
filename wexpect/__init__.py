@@ -8,6 +8,7 @@ try:
 except KeyError:
     spawn_class_name = 'legacy_wexpect'
 
+from .legacy_wexpect import ConsoleReader
 if spawn_class_name == 'legacy_wexpect':
     from .legacy_wexpect import ExceptionPexpect
     from .legacy_wexpect import EOF
@@ -55,4 +56,4 @@ else:
         
     __all__ = ['split_command_line', 'join_args', 'ExceptionPexpect', 'EOF', 'TIMEOUT',
            'ConsoleReaderSocket', 'ConsoleReaderPipe', 'spawn', 'SpawnSocket', 'SpawnPipe', 'run', 
-           'searcher_string', 'searcher_re', '__version__']
+           'searcher_string', 'searcher_re', '__version__', 'ConsoleReader']

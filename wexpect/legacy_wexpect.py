@@ -1616,6 +1616,7 @@ class ConsoleReader: # pragma: no cover
    
     def __init__(self, path, pid, tid, env = None, cp=None, logdir=None):
         self.logdir = logdir
+        logger.info(f"ConsoleReader started: {self.__class__.__name__}")
         logger.info('consolepid: {}'.format(os.getpid()))
         logger.debug("OEM code page: %s" % windll.kernel32.GetOEMCP())
         logger.debug("ANSI code page: %s" % windll.kernel32.GetACP())
