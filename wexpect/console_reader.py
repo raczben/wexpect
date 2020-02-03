@@ -80,8 +80,8 @@ class ConsoleReaderBase:
     This class initialize the console starts the child in it and reads the console periodically.
     """
 
-    def __init__(self, path, host_pid, cp=None, window_size_x=80, window_size_y=25,
-                 buffer_size_x=80, buffer_size_y=16000, local_echo=True, interact=False, **kwargs):
+    def __init__(self, path, host_pid, tid=None, cp=None, window_size_x=80, window_size_y=25,
+                 buffer_size_x=80, buffer_size_y=16000, local_echo=True, interact=False, just_init=False, **kwargs):
         """Initialize the console starts the child in it and reads the console periodically.        
 
         Args:
@@ -117,6 +117,16 @@ class ConsoleReaderBase:
             except Exception as e:
                 logger.info(e)
                 
+        if just_init:
+                self.initConsole()
+                si = win32process.GetStartupInfo()
+                self.__childProcess, _, self.child_pid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
+                                                                             0, None, None, si)
+                self.child_process = psutil.Process(self.child_pid)
+                
+                logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
+                time.sleep(5)
+                return
         try:
             self.create_connection(**kwargs)
             logger.info('Spawning %s' % path)
@@ -378,7 +388,6 @@ class ConsoleReaderBase:
         logger.spam('cursor: %r, current: %r' % (cursorPos, self.__currentReadCo))
         
         raw = self.readConsole(self.__currentReadCo, cursorPos)
-        logger.debug('Read: %r' % raw)
         rawlist = []
         while raw:
             rawlist.append(raw[:self.__consSize.X])
@@ -409,6 +418,8 @@ class ConsoleReaderBase:
                 # Detect changed lines
                 self.__buffer.seek(pos)
                 buf = self.__buffer.read()
+                logger.debug('buf: %r' % buf)
+                logger.debug('raw: %r' % raw)
                 if raw.startswith(buf):
                     # Line has grown
                     rawslice = raw[len(buf):]

@@ -1131,31 +1131,31 @@ class Wtty:
             
         logger.info(f"Fetch child's process and pid...")
         
-        while True:
-            msg = win32gui.GetMessage(0, 0, 0)
-            childPid = msg[1][2]
+#        while True:
+#            msg = win32gui.GetMessage(0, 0, 0)
+#            childPid = msg[1][2]
             # Sometimes win32gui.GetMessage returns a bogus PID, so keep calling it
             # until we can successfully connect to the child or timeout is
             # reached
-            if childPid:
-                try:
-                    self.__childProcess = win32api.OpenProcess(
-                        win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, childPid)
-                    self.__conProcess = win32api.OpenProcess(
-                        win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, self.conpid)
-                except pywintypes.error:
-                    if time.time() > ts + self.timeout:
-                        break
-                else:
-                    self.pid = childPid
-                    break
-            time.sleep(.05)
+#            if childPid:
+#                try:
+#                    self.__childProcess = win32api.OpenProcess(
+#                        win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, childPid)
+        self.__conProcess = win32api.OpenProcess(
+            win32con.PROCESS_TERMINATE | win32con.PROCESS_QUERY_INFORMATION, False, self.conpid)
+#                except pywintypes.error:
+#                    if time.time() > ts + self.timeout:
+#                        break
+#                else:
+#                    self.pid = childPid
+#                    break
+#            time.sleep(.05)
             
         logger.info(f"Child's pid: {self.pid}")
         
-        if not self.__childProcess:
-            logger.info('ExceptionPexpect: The process ' + args[0] + ' could not be started.')
-            raise ExceptionPexpect ('The process ' + args[0] + ' could not be started.') 
+#        if not self.__childProcess:
+#            logger.info('ExceptionPexpect: The process ' + args[0] + ' could not be started.')
+#            raise ExceptionPexpect ('The process ' + args[0] + ' could not be started.') 
         
                                                                                                               
         
@@ -1225,7 +1225,7 @@ class Wtty:
                                         ' '.join(pyargs), 
                                         f"import sys; sys.path = {spath} + sys.path;"
                                         f"args = {args}; import wexpect;"
-                                        f"wexpect.ConsoleReader(wexpect.join_args(args), {pid}, {tid}, cp={cp}, logdir={logdir})"
+                                        f"wexpect.ConsoleReaderPipe(wexpect.join_args(args), {pid}, {tid}, cp={cp}, logdir={logdir}, just_init=True)"
                                         )
                                         
         logger.info(f'CreateProcess: {commandLine}')
@@ -1604,7 +1604,7 @@ class Wtty:
         finally:
             self.switchBack()
     
-    def isalive(self, console=False):
+    def isalive(self, console=True):
         """True if the child is still alive, false otherwise"""
         
         if console:
