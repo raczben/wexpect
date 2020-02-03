@@ -12,7 +12,13 @@ environment:
     secure: CcyBI8e/2LdIT2aYIytTAgR4795DNBDM/ztsz1kqZYYOeNc3zlJWLdYWrnjCHn5W6/ZcAHrsxCdCMHvtr6PIVgBRpl2RR3fk2jKTzKqJJsLW871q30BsE0kws32f1IiqfjVtLn8BUC91IJ2xBBXtOYktf1tCMi3zJMSF9+MIOQKIu298bIRnD1Lc+4lzcSZJOn4I7dOMdzlcCMRqhtO58TGwR/hD+22FHjyWVB8nLL18AO+XXS9lHSOUrH6rD5NYvVFZD68oV/RrCGAjRmfMnw==
 
   matrix:
-  - TOXENV: py37
+    # Pre-installed Python versions, which Appveyor may upgrade to
+    # a later point release.
+    # See: http://www.appveyor.com/docs/installed-software#python
+
+    - PYTHON: "C:\\Python37"
+      PYTHON_VERSION: "3.7.x"
+      PYTHON_ARCH: "32"
   
 build: off
 
