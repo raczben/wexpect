@@ -23,7 +23,7 @@ environment:
 build: off
 
 install:
-  - pip install .[test]
+  - C:\\Python37\\pip install .[test]
 
 test_script:
   - cmd: set WEXPECT_SPAWN_CLASS=SpawnPipe
