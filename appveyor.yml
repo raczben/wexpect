@@ -17,43 +17,11 @@ install:
   - pip install .[test]
 
 test_script:
-  - tox
+  - cmd: set WEXPECT_SPAWN_CLASS=SpawnPipe
+  - cmd: python -c "import sys;sys.path = ['C:\\projects\\wexpect'] + sys.path;import wexpect;import time;wexpect.console_reader.logger.info('loggerStart.');cons = wexpect.ConsoleReaderPipe(wexpect.join_args([python, '-Wi', 'list100.py']), host_pid=2684, local_echo=True, interact=False);wexpect.console_reader.logger.info(f'Console finished2. {cons.child_exitstatus}');sys.exit(cons.child_exitstatus)"
   
-on_failure:
+after_test:
   - python dump_logs.py 
 
-after_test:
-  # Upload code coverage results.
-  # https://github.com/codecov/codecov-python/issues/158#issuecomment-514282362
-  - codecov --required || (sleep 5 && codecov --required) || (sleep 5 && codecov --required) || (sleep 5 && codecov --required) || (sleep 5 && codecov --required)
-  
-  # fill .pypirc file.
-  # pypi
-  - cmd: "echo [pypi] > %USERPROFILE%\\.pypirc"
-  - cmd: "echo repository: https://upload.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo username: __token__ >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo password: %pypipw% >> %USERPROFILE%\\.pypirc"
-  # testpypi
-  - cmd: "echo [testpypi] >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo repository: https://test.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo username: __token__ >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo password: %testpypipw% >> %USERPROFILE%\\.pypirc"
-  
-  # Create source distribution.
-  - python -m setup sdist
-  
-  # Upload to pypi.
-  # More precisely. The master and release builds will be uploaded to pypi. Test branch will be
-  # uploaded to test-pypi the test builds.
-  # See more at https://stackoverflow.com/a/39155147/2506522
-  
-  - IF %APPVEYOR_REPO_BRANCH%==master (
-      twine upload -r pypi dist\\wexpect*.tar.gz
-    )
-  - IF %APPVEYOR_REPO_TAG%==true (
-      twine upload -r pypi dist\\wexpect*.tar.gz
-    )
-  - IF %APPVEYOR_REPO_BRANCH%==test (
-      twine upload -r testpypi dist\\wexpect*.tar.gz
-    )
-   
+#on_failure:
+#  - python dump_logs.py 
