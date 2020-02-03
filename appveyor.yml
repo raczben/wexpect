@@ -18,7 +18,7 @@ install:
 
 test_script:
   - cmd: set WEXPECT_SPAWN_CLASS=SpawnPipe
-  - cmd: python -c "import sys;sys.path = ['C:\\projects\\wexpect'] + sys.path;import wexpect;import time;wexpect.console_reader.logger.info('loggerStart.');cons = wexpect.ConsoleReaderPipe(wexpect.join_args([python, '-Wi', 'list100.py']), host_pid=2684, local_echo=True, interact=False);wexpect.console_reader.logger.info(f'Console finished2. {cons.child_exitstatus}');sys.exit(cons.child_exitstatus)"
+  - cmd: python -m wexpect.console_reader "python -Wi tests\\list100.py"
   
 after_test:
   - python dump_logs.py 
