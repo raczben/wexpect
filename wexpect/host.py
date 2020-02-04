@@ -294,11 +294,11 @@ class SpawnBase:
         
         try:
             logger.info('Deleting...')
-            if self.child_process is not None:
-                self.terminate()
-                self.disconnect_from_child()
-                if self.safe_exit:
-                    self.wait()
+#            if self.child_process is not None:
+#                self.terminate()
+#                self.disconnect_from_child()
+#                if self.safe_exit:
+#                    self.wait()
         except:
             traceback.print_exc()
             logger.warning(traceback.format_exc())
@@ -446,132 +446,7 @@ class SpawnBase:
             self.exitstatus = self.console_process.wait()
             logger.info(f'exitstatus: {self.exitstatus}')
         return self.exitstatus
-        
-    def read (self, size = -1):   # File-like object.
-        """This reads at most "size" bytes from the file (less if the read hits
-        EOF before obtaining size bytes). If the size argument is negative or
-        omitted, read all data until EOF is reached. The bytes are returned as
-        a string object. An empty string is returned when EOF is encountered
-        immediately. """
-
-        if size == 0:
-            return ''
-        if size < 0:
-            self.expect (self.delimiter) # delimiter default is EOF
-            return self.before
-
-        # I could have done this more directly by not using expect(), but
-        # I deliberately decided to couple read() to expect() so that
-        # I would catch any bugs early and ensure consistant behavior.
-        # It's a little less efficient, but there is less for me to
-        # worry about if I have to later modify read() or expect().
-        # Note, it's OK if size==-1 in the regex. That just means it
-        # will never match anything in which case we stop only on EOF.
-        cre = re.compile('.{%d}' % size, re.DOTALL)
-        index = self.expect ([cre, self.delimiter]) # delimiter default is EOF
-        if index == 0:
-            return self.after ### self.before should be ''. Should I assert this?
-        return self.before
-
-    def readline (self, size = -1):    # File-like object.
-        """This reads and returns one entire line. A trailing newline is kept
-        in the string, but may be absent when a file ends with an incomplete
-        line. Note: This readline() looks for a \\r\\n pair even on UNIX
-        because this is what the pseudo tty device returns. So contrary to what
-        you may expect you will receive the newline as \\r\\n. An empty string
-        is returned when EOF is hit immediately. Currently, the size argument is
-        mostly ignored, so this behavior is not standard for a file-like
-        object. If size is 0 then an empty string is returned. """
-
-        if size == 0:
-            return ''
-        index = self.expect (['\r\n', self.delimiter]) # delimiter default is EOF
-        if index == 0:
-            return self.before + '\r\n'
-        else:
-            return self.before
-
-    def __iter__ (self):    # File-like object.
-        """This is to support iterators over a file-like object.
-        """
-
-        return self
-
-    def read_nonblocking (self, size = 1):
-        """Virtual definition
-        """
-        raise NotImplementedError
-
-    def __next__ (self):    # File-like object.
-        """This is to support iterators over a file-like object.
-        """
-
-        result = self.readline()
-        if self.after == self.delimiter:
-            raise StopIteration
-        return result
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.terminate()
-
-    def readlines (self, sizehint = -1):    # File-like object.
-        """This reads until EOF using readline() and returns a list containing
-        the lines thus read. The optional "sizehint" argument is ignored. """
-
-        lines = []
-        while True:
-            line = self.readline()
-            if not line:
-                break
-            lines.append(line)
-        return lines
-
-    def isatty(self):   # File-like object.
-        """The child is always created with a console."""
-        
-        return True
-
-    def write(self, s):   # File-like object.
-
-        """This is similar to send() except that there is no return value.
-        """
-
-        self.send(s)
-
-    def writelines (self, sequence):   # File-like object.
-        """This calls write() for each element in the sequence. The sequence
-        can be any iterable object producing strings, typically a list of
-        strings. This does not add line separators There is no return value.
-        """
-
-        for s in sequence:
-            self.write(s)
-
-    def sendline(self, s=''):
-
-        """This is like send(), but it adds a line feed (os.linesep). This
-        returns the number of bytes written. """
-
-        n = self.send(s+'\r\n')
-        return n
-
-    def sendeof(self):
-        """This sends an EOF to the child. This sends a character which causes
-        the pending parent output buffer to be sent to the waiting child
-        program without waiting for end-of-line. If it is the first character
-        of the line, the read() in the user program returns 0, which signifies
-        end-of-file. This means to work as expected a sendeof() has to be
-        called at the beginning of a line. This method does not send a newline.
-        It is the responsibility of the caller to ensure the eof is sent at the
-        beginning of a line. """
-
-        # platform does not define VEOF so assume CTRL-D
-        char = chr(4)
-        self.send(char)
-        
+          
     def send(self, s, delaybeforesend=None):
         """Virtual definition
         """

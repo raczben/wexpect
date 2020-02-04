@@ -128,7 +128,7 @@ class ConsoleReaderBase:
                     self.child_process = psutil.Process(self.child_pid)
                     
                     logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
-                    time.sleep(3)
+                    time.sleep(1)
                     
                     logger.info(repr(self.consout.ReadConsoleOutputCharacter(50, self.getCoord(0))))
                     self.readConsole(self.getCoord(0), self.getCoord(50))
@@ -155,7 +155,9 @@ class ConsoleReaderBase:
                 self.interact()
                 self.interact()
                 
-            self.read_loop()
+            time.sleep(1)
+            logger.info(repr(self.consout.ReadConsoleOutputCharacter(50, self.getCoord(0))))
+#            self.read_loop()
         except:
             logger.error(traceback.format_exc())
             time.sleep(.1)
