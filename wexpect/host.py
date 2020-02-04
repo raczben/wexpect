@@ -286,7 +286,7 @@ class SpawnBase:
         self.child_fd = self.startChild(self.args, self.env)
         self.get_child_process()
         logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
-        self.connect_to_child()
+#        self.connect_to_child()
         
     def __del__(self):
         """This makes sure that no system resources are left open. Python only
@@ -362,7 +362,8 @@ class SpawnBase:
         self.console_class_parameters.update({
                 'host_pid': self.host_pid,
                 'local_echo': self.echo,
-                'interact': self.interact_state
+                'interact': self.interact_state,
+                'just_init': True
                 })
         console_class_parameters_kv_pairs = [f'{k}={v}' for k,v in self.console_class_parameters.items() ]
         console_class_parameters_str = ', '.join(console_class_parameters_kv_pairs)
