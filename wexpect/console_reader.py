@@ -130,6 +130,7 @@ class ConsoleReaderBase:
                     logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
                     time.sleep(3)
                     
+                    logger.info(repr(self.consout.ReadConsoleOutputCharacter(50, self.getCoord(0))))
                     self.readConsole(self.getCoord(0), self.getCoord(50))
                     return
         except:
