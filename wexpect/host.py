@@ -76,6 +76,7 @@ import signal
 import socket
 import logging
 
+import windll
 import pywintypes
 import win32process
 import win32con
@@ -136,6 +137,7 @@ class SpawnBase:
         self.timeout = timeout
         self.delimiter = EOF
         self.cwd = cwd
+        self.codepage = codepage
         self.env = env
         self.echo = echo
         self.maxread = maxread # max bytes to read at one time into buffer
@@ -223,10 +225,13 @@ class SpawnBase:
         else:
             python_executable = os.path.join(os.path.dirname(sys.executable), 'python.exe')
               
+        cp = self.codepage or windll.kernel32.GetACP()
+        
         self.console_class_parameters.update({
                 'host_pid': self.host_pid,
                 'local_echo': self.echo,
                 'interact': self.interact_state,
+                'cp': cp,
                 'just_init': True
                 })
         console_class_parameters_kv_pairs = [f'{k}={v}' for k,v in self.console_class_parameters.items() ]

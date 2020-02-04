@@ -633,7 +633,7 @@ class Wtty:
                                         ' '.join(pyargs), 
                                         f"import sys; sys.path = {spath} + sys.path;"
                                         f"args = {args}; import wexpect;"
-                                        f"wexpect.ConsoleReaderPipe(wexpect.join_args(args), {pid}, just_init=True)"
+                                        f"wexpect.ConsoleReaderPipe(wexpect.join_args(args), {pid}, cp={cp}, just_init=True)"
                                         )
                                         
         logger.info(f'CreateProcess: {commandLine}')
