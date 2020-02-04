@@ -243,6 +243,7 @@ class SpawnBase:
         self.child_fd = -1 # initially closed
         self.timeout = timeout
         self.delimiter = EOF
+        self.codepage = codepage
         self.cwd = cwd
         self.env = env
         self.echo = echo
@@ -362,7 +363,8 @@ class SpawnBase:
         self.console_class_parameters.update({
                 'host_pid': self.host_pid,
                 'local_echo': self.echo,
-                'interact': self.interact_state
+                'interact': self.interact_state,
+                'codepage': self.codepage
                 })
         console_class_parameters_kv_pairs = [f'{k}={v}' for k,v in self.console_class_parameters.items() ]
         console_class_parameters_str = ', '.join(console_class_parameters_kv_pairs)

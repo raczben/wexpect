@@ -46,6 +46,7 @@ import signal
 from io import StringIO
 
 import ctypes
+from ctypes import windll
 import win32console
 import win32process
 import win32con
@@ -80,14 +81,14 @@ class ConsoleReaderBase:
     This class initialize the console starts the child in it and reads the console periodically.
     """
 
-    def __init__(self, path, host_pid, cp=None, window_size_x=80, window_size_y=25,
+    def __init__(self, path, host_pid, codepage=None, window_size_x=80, window_size_y=25,
                  buffer_size_x=80, buffer_size_y=16000, local_echo=True, interact=False, **kwargs):
         """Initialize the console starts the child in it and reads the console periodically.        
 
         Args:
             path (str): Child's executable with arguments.
             parent_pid (int): Parent (aka. host) process process-ID
-            cp (:obj:, optional): Output console code page.
+            codepage (:obj:, optional): Output console code page.
         """
         self.lastRead  = 0
         self.__bufferY = 0
@@ -109,13 +110,15 @@ class ConsoleReaderBase:
         
         logger.info("ConsoleReader started")
         
-        if cp:
-            try:
-                logger.info("Setting console output code page to %s" % cp)
-                win32console.SetConsoleOutputCP(cp)
-                logger.info("Console output code page: %s" % ctypes.windll.kernel32.GetConsoleOutputCP())
-            except Exception as e:
-                logger.info(e)
+        if codepage is None:
+            codepage = windll.kernel32.GetACP()
+        
+        try:
+            logger.info("Setting console output code page to %s" % codepage)
+            win32console.SetConsoleOutputCP(codepage)
+            logger.info("Console output code page: %s" % ctypes.windll.kernel32.GetConsoleOutputCP())
+        except Exception as e:
+            logger.info(e)
                 
         try:
             self.create_connection(**kwargs)
