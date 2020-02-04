@@ -31,7 +31,7 @@ test_script:
   - cmd: C:\\Python37\\python  issues\appveyor.py
   
 after_test:
-  - python dump_logs.py 
+  - C:\\Python37\\python dump_logs.py 
 
 #on_failure:
 #  - python dump_logs.py 

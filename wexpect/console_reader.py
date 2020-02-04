@@ -120,6 +120,7 @@ class ConsoleReaderBase:
                     logger.info(e)
                     
             if just_init:
+                    logger.info(f'just_init')
                     self.initConsole()
                     si = win32process.GetStartupInfo()
                     self.__childProcess, _, self.child_pid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
@@ -127,7 +128,7 @@ class ConsoleReaderBase:
                     self.child_process = psutil.Process(self.child_pid)
                     
                     logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
-                    time.sleep(5)
+                    time.sleep(3)
                     
                     self.readConsole(self.getCoord(0), self.getCoord(50))
                     return

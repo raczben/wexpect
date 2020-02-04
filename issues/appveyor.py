@@ -15,4 +15,5 @@ p=wexpect.legacy_wexpect.spawn(cmd)
 time.sleep(.5)
 p.expect('app')
 print(p.before)
+time.sleep(5)
 
