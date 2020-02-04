@@ -13,16 +13,13 @@ environment:
 
 build: off
 
-install:
-  - pip install .[test]
-
 test_script:
   - tox
 
 after_test:
   # Upload code coverage results.
   # https://github.com/codecov/codecov-python/issues/158#issuecomment-514282362
-  - codecov --no-color -X gcov --file coverage.xml --required || (sleep 5 && codecov --no-color -X gcov --file coverage.xml --required) || (sleep 5 && codecov --no-color -X gcov --file coverage.xml --required) || (sleep 5 && codecov --no-color -X gcov --file coverage.xml --required) || (sleep 5 && codecov --no-color -X gcov --file coverage.xml --required)
+  - (codecov --no-color -X gcov --file py37-default_coverage.xml --required && codecov --no-color -X gcov --file py37-legacy_wexpect_coverage.xml --required && codecov --no-color -X gcov --file py37-spawn_pipe_coverage.xml --required) || (sleep 30 && codecov --no-color -X gcov --file py37-default_coverage.xml --required && codecov --no-color -X gcov --file py37-legacy_wexpect_coverage.xml --required && codecov --no-color -X gcov --file py37-spawn_pipe_coverage.xml --required)
   # fill .pypirc file.
   # pypi
   - cmd: "echo [pypi] > %USERPROFILE%\\.pypirc"
