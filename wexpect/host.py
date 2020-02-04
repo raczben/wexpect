@@ -76,7 +76,7 @@ import signal
 import socket
 import logging
 
-import windll
+from ctypes import windll
 import pywintypes
 import win32process
 import win32con
