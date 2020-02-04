@@ -89,44 +89,50 @@ class ConsoleReaderBase:
             parent_pid (int): Parent (aka. host) process process-ID
             cp (:obj:, optional): Output console code page.
         """
-        self.lastRead  = 0
-        self.__bufferY = 0
-        self.lastReadData = ""
-        self.totalRead = 0
-        self.__buffer = StringIO()
-        self.__currentReadCo = win32console.PyCOORDType(0, 0)
-        self.pipe = None
-        self.connection = None
-        self.consin = None
-        self.consout = None
-        self.local_echo = local_echo
-        self.console_pid = os.getpid()
-        self.host_pid = host_pid
-        self.host_process = psutil.Process(host_pid)
-        self.child_process = None
-        self.child_pid = None
-        self.enable_signal_chars = True
-        
         logger.info(f"ConsoleReader started: {self.__class__.__name__}")
         
-        if cp:
-            try:
-                logger.info("Setting console output code page to %s" % cp)
-                win32console.SetConsoleOutputCP(cp)
-                logger.info("Console output code page: %s" % ctypes.windll.kernel32.GetConsoleOutputCP())
-            except Exception as e:
-                logger.info(e)
-                
-        if just_init:
-                self.initConsole()
-                si = win32process.GetStartupInfo()
-                self.__childProcess, _, self.child_pid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
-                                                                             0, None, None, si)
-                self.child_process = psutil.Process(self.child_pid)
-                
-                logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
-                time.sleep(5)
-                return
+        try:
+            self.lastRead  = 0
+            self.__bufferY = 0
+            self.lastReadData = ""
+            self.totalRead = 0
+            self.__buffer = StringIO()
+            self.__currentReadCo = win32console.PyCOORDType(0, 0)
+            self.pipe = None
+            self.connection = None
+            self.consin = None
+            self.consout = None
+            self.local_echo = local_echo
+            self.console_pid = os.getpid()
+            self.host_pid = host_pid
+            self.host_process = psutil.Process(host_pid)
+            self.child_process = None
+            self.child_pid = None
+            self.enable_signal_chars = True
+            
+            
+            if cp:
+                try:
+                    logger.info("Setting console output code page to %s" % cp)
+                    win32console.SetConsoleOutputCP(cp)
+                    logger.info("Console output code page: %s" % ctypes.windll.kernel32.GetConsoleOutputCP())
+                except Exception as e:
+                    logger.info(e)
+                    
+            if just_init:
+                    self.initConsole()
+                    si = win32process.GetStartupInfo()
+                    self.__childProcess, _, self.child_pid, self.__tid = win32process.CreateProcess(None, path, None, None, False, 
+                                                                                 0, None, None, si)
+                    self.child_process = psutil.Process(self.child_pid)
+                    
+                    logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
+                    time.sleep(5)
+                    
+                    self.readConsole(self.getCoord(0), self.getCoord(50))
+                    return
+        except:
+            logger.warning(traceback.format_exc())
         try:
             self.create_connection(**kwargs)
             logger.info('Spawning %s' % path)
@@ -355,6 +361,8 @@ class ConsoleReaderBase:
             self.lastRead += len(s)
             self.totalRead += len(s)
             buff.append(s)
+            
+            logger.debug(s)
 
             startCo = endPoint
 

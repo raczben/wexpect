@@ -116,11 +116,11 @@ __all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'which',
 # console manipulation.
 #
 pid=os.getpid()
-logger = logging.getLogger('wexpect')
+logger = logging.getLogger('wexpect_legacy')
 try:
     logger_level = os.environ['WEXPECT_LOGGER_LEVEL']
     logger.setLevel(logger_level)
-    fh = logging.FileHandler(f'wexpect_{pid}.log', 'w', 'utf-8')
+    fh = logging.FileHandler(f'wexpect_legacy_{pid}.log', 'w', 'utf-8')
     formatter = logging.Formatter('%(asctime)s - %(filename)s::%(funcName)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
