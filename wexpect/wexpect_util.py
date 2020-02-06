@@ -1,7 +1,7 @@
 """Wexpect is a Windows variant of pexpect https://pexpect.readthedocs.io.
 
 Wexpect is a Python module for spawning child applications and controlling
-them automatically. 
+them automatically.
 
 wexpect util contains small functions, and classes, which are used in multiple classes.
 The command line argument parsers, and the Exceptions placed here.
@@ -48,17 +48,22 @@ import signal
 EOF_CHAR = b'\x04'
 
 SIGNAL_CHARS = {
-    signal.SIGTERM:  b'\x011', # Device control 1
-    signal.SIGINT:   b'\x012', # Device control 2
-                }
+    signal.SIGTERM: b'\x011',  # Device control 1
+    signal.SIGINT: b'\x012',  # Device control 2
+}
 
 SPAM = 5
 logging.addLevelName(SPAM, "SPAM")
+
+
 def spam(self, message, *args, **kws):
     if self.isEnabledFor(SPAM):
         # Yes, logger takes its '*args' as 'args'.
         self._log(SPAM, message, args, **kws)
+
+
 logging.Logger.spam = spam
+
 
 def init_logger(logger):
     try:
@@ -72,13 +77,15 @@ def init_logger(logger):
         logger_filename = f'{logger_filename}.log'
         os.makedirs(os.path.dirname(logger_filename), exist_ok=True)
         fh = logging.FileHandler(logger_filename, 'w', 'utf-8')
-        formatter = logging.Formatter('%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
         logger.addHandler(fh)
     except KeyError:
         logger.setLevel(logging.ERROR)
 
-def split_command_line(command_line, escape_char = '^'):
+
+def split_command_line(command_line, escape_char='^'):
     """This splits a command line into a list of arguments. It splits arguments
     on spaces, but handles embedded quotes, doublequotes, and escaped
     characters. It's impossible to do this with a regular expression, so I
@@ -92,21 +99,21 @@ def split_command_line(command_line, escape_char = '^'):
     state_esc = 1
     state_singlequote = 2
     state_doublequote = 3
-    state_whitespace = 4 # The state of consuming whitespace between commands.
+    state_whitespace = 4    # The state of consuming whitespace between commands.
     state = state_basic
 
     for c in command_line:
         if state == state_basic or state == state_whitespace:
-            if c == escape_char: # Escape the next character
+            if c == escape_char:    # Escape the next character
                 state = state_esc
-            elif c == r"'": # Handle single quote
+            elif c == r"'":     # Handle single quote
                 state = state_singlequote
-            elif c == r'"': # Handle double quote
+            elif c == r'"':     # Handle double quote
                 state = state_doublequote
             elif c.isspace():
                 # Add arg to arg_list if we aren't in the middle of whitespace.
                 if state == state_whitespace:
-                    None # Do nothing.
+                    None    # Do nothing.
                 else:
                     arg_list.append(arg)
                     arg = ''
@@ -132,8 +139,9 @@ def split_command_line(command_line, escape_char = '^'):
         arg_list.append(arg)
     return arg_list
 
+
 def join_args(args):
-    """Joins arguments into a command line. It quotes all arguments that contain
+    """Joins arguments a command line. It quotes all arguments that contain
     spaces or any of the characters ^!$%&()[]{}=;'+,`~"""
     commandline = []
     for arg in args:
@@ -178,6 +186,6 @@ class EOF(ExceptionPexpect):
     """Raised when EOF is read from a child. This usually means the child has exited.
     The user can wait to EOF, which means he waits the end of the execution of the child process."""
 
+
 class TIMEOUT(ExceptionPexpect):
     """Raised when a read time exceeds the timeout. """
-

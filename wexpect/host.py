@@ -7,7 +7,7 @@ scripts for duplicating software package installations on different servers. It
 can be used for automated software testing. Wexpect is in the spirit of Don
 Libes' Expect, but Wexpect is pure Python. Other Expect-like modules for Python
 require TCL and Expect or require C extensions to be compiled. Wexpect does not
-use C, Expect, or TCL extensions. 
+use C, Expect, or TCL extensions.
 
 There are two main interfaces to Wexpect -- the function, run() and the class,
 spawn. You can call the run() function to execute a command and return the
@@ -92,12 +92,12 @@ from .wexpect_util import EOF_CHAR
 from .wexpect_util import SIGNAL_CHARS
 
 logger = logging.getLogger('wexpect')
-        
+
 init_logger(logger)
 
 
-def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None, logfile=None,
-         cwd=None, env=None, **kwargs):
+def run(command, timeout=-1, withexitstatus=False, events=None, extra_args=None, logfile=None,
+            cwd=None, env=None, **kwargs):
     """
     This function runs the given command; waits for it to finish; then
     returns all output as a string. STDERR is included in output. If the full
@@ -162,21 +162,22 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
     if timeout == -1:
         child = spawn(command, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
     else:
-        child = spawn(command, timeout=timeout, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
+        child = spawn(
+            command, timeout=timeout, maxread=2000, logfile=logfile, cwd=cwd, env=env, **kwargs)
     if events is not None:
         patterns = list(events.keys())
         responses = list(events.values())
     else:
-        patterns=None # We assume that EOF or TIMEOUT will save us.
-        responses=None
+        patterns = None   # We assume that EOF or TIMEOUT will save us.
+        responses = None
     child_result_list = []
     event_count = 0
     while 1:
         try:
-            index = child.expect (patterns)
+            index = child.expect(patterns)
             if type(child.after) in (str,):
                 child_result_list.append(child.before + child.after)
-            else: # child.after may have been a TIMEOUT or EOF, so don't cat those.
+            else:   # child.after may have been a TIMEOUT or EOF, so don't cat those.
                 child_result_list.append(child.before)
             if type(responses[index]) in (str,):
                 child.send(responses[index])
@@ -189,7 +190,7 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
                     break
             else:
                 logger.warning("TypeError ('The callback must be a string or function type.')")
-                raise TypeError ('The callback must be a string or function type.')
+                raise TypeError('The callback must be a string or function type.')
             event_count = event_count + 1
         except TIMEOUT:
             child_result_list.append(child.before)
@@ -204,15 +205,16 @@ def run (command, timeout=-1, withexitstatus=False, events=None, extra_args=None
     else:
         return child_result
 
-      
+
 class SpawnBase:
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
-        logfile=None, cwd=None, env=None, codepage=None, echo=True, safe_exit=True, interact=False, **kwargs):
+                 logfile=None, cwd=None, env=None, codepage=None, echo=True, safe_exit=True,
+                 interact=False, **kwargs):
         """This starts the given command in a child process. This does all the
         fork/exec type of stuff for a pty. This is called by __init__. If args
         is empty then command will be parsed (split on spaces) and args will be
-        set to parsed arguments. 
-        
+        set to parsed arguments.
+
         The pid and child_fd of this object get set by this method.
         Note that it is difficult for this method to fail.
         You cannot detect if the child process cannot start.
@@ -222,12 +224,12 @@ class SpawnBase:
         That may not necessarily be bad because you may haved spawned a child
         that performs some task; creates no stdout output; and then dies.
         """
-        self.host_pid = os.getpid() # That's me
+        self.host_pid = os.getpid()     # That's me
         self.console_process = None
         self.console_pid = None
         self.child_process = None
         self.child_pid = None
-        
+
         self.safe_exit = safe_exit
         self.searcher = None
         self.ignorecase = False
@@ -237,23 +239,26 @@ class SpawnBase:
         self.match_index = None
         self.terminated = True
         self.exitstatus = None
-        self.status = None # status returned by os.waitpid
+        self.status = None  # status returned by os.waitpid
         self.flag_eof = False
         self.flag_child_finished = False
-        self.child_fd = -1 # initially closed
+        self.child_fd = -1  # initially closed
         self.timeout = timeout
         self.delimiter = EOF
         self.codepage = codepage
         self.cwd = cwd
         self.env = env
         self.echo = echo
-        self.maxread = maxread # max bytes to read at one time into buffer
-        self.delaybeforesend = 0.1 # Sets sleep time used just before sending data to child. Time in seconds.
-        self.delayafterterminate = 0.1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
-        self.buffer = '' # This is the read buffer. See maxread.
-        self.searchwindowsize = searchwindowsize # Anything before searchwindowsize point is preserved, but not searched.
+        self.maxread = maxread      # max bytes to read at one time into buffer
+        # delaybeforesend: Sets sleep time used just before sending data to child. Time in seconds.
+        self.delaybeforesend = 0.1
+        # delayafterterminate: Sets delay in terminate() method to allow kernel time to update
+        # process status. Time in seconds.
+        self.delayafterterminate = 0.1
+        self.buffer = ''    # This is the read buffer. See maxread.
+        # searchwindowsize: Anything before searchwindowsize point is preserved, but not searched.
+        self.searchwindowsize = searchwindowsize
         self.interact_state = interact
-        
 
         # If command is an int type then it may represent a file descriptor.
         if type(command) == type(0):
@@ -263,36 +268,37 @@ class SpawnBase:
         if type (args) != type([]):
             logger.warning("TypeError ('The argument, args, must be a list.')")
             raise TypeError ('The argument, args, must be a list.')
-   
+
         if args == []:
             self.args = split_command_line(command)
             self.command = self.args[0]
         else:
-            self.args = args[:] # work with a copy
-            self.args.insert (0, command)
-            self.command = command    
-            
+            self.args = args[:]     # work with a copy
+            self.args.insert(0, command)
+            self.command = command
+
         command_with_path = shutil.which(self.command)
         if command_with_path is None:
             logger.warning('The command was not found or was not executable: %s.' % self.command)
-            raise ExceptionPexpect ('The command was not found or was not executable: %s.' % self.command)
+            raise ExceptionPexpect(
+                'The command was not found or was not executable: %s.' % self.command)
         self.command = command_with_path
         self.args[0] = self.command
 
-        self.name = '<' + ' '.join (self.args) + '>'      
-            
+        self.name = '<' + ' '.join(self.args) + '>'
+
         self.terminated = False
         self.closed = False
-        
+
         self.child_fd = self.startChild(self.args, self.env)
         self.get_child_process()
         logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
         self.connect_to_child()
-        
+
     def __del__(self):
         """This makes sure that no system resources are left open. Python only
         garbage collects Python objects, not the child console."""
-        
+
         try:
             logger.info('Deleting...')
             if self.child_process is not None:
@@ -300,10 +306,10 @@ class SpawnBase:
                 self.disconnect_from_child()
                 if self.safe_exit:
                     self.wait()
-        except:
+        except Exception:
             traceback.print_exc()
             logger.warning(traceback.format_exc())
-           
+
     def __str__(self):
         """This returns a human-readable string that represents the state of
         the object. """
@@ -336,9 +342,9 @@ class SpawnBase:
         si = win32process.GetStartupInfo()
         si.dwFlags = win32process.STARTF_USESHOWWINDOW
         si.wShowWindow = win32con.SW_HIDE
-    
-        dirname = os.path.dirname(sys.executable 
-                                  if getattr(sys, 'frozen', False) else 
+
+        dirname = os.path.dirname(sys.executable
+                                  if getattr(sys, 'frozen', False) else
                                   os.path.abspath(__file__))
         spath = [os.path.dirname(dirname)]
         pyargs = ['-c']
@@ -346,33 +352,35 @@ class SpawnBase:
             # If we are running 'frozen', add library.zip and lib\library.zip to sys.path
             # py2exe: Needs appropriate 'zipfile' option in setup script and 'bundle_files' 3
             spath.append(os.path.join(dirname, 'library.zip'))
-            spath.append(os.path.join(dirname, 'library.zip', 
+            spath.append(os.path.join(dirname, 'library.zip',
                                       os.path.basename(os.path.splitext(sys.executable)[0])))
             if os.path.isdir(os.path.join(dirname, 'lib')):
                 dirname = os.path.join(dirname, 'lib')
                 spath.append(os.path.join(dirname, 'library.zip'))
-                spath.append(os.path.join(dirname, 'library.zip', 
+                spath.append(os.path.join(dirname, 'library.zip',
                                           os.path.basename(os.path.splitext(sys.executable)[0])))
             pyargs.insert(0, '-S')  # skip 'import site'
-        
+
         if getattr(sys, 'frozen', False):
-            python_executable = os.path.join(dirname, 'python.exe') 
+            python_executable = os.path.join(dirname, 'python.exe')
         else:
             python_executable = os.path.join(os.path.dirname(sys.executable), 'python.exe')
-              
-        self.console_class_parameters.update({
+
+        self.console_class_parameters.update(
+            {
                 'host_pid': self.host_pid,
                 'local_echo': self.echo,
                 'interact': self.interact_state,
                 'codepage': self.codepage
-                })
-        console_class_parameters_kv_pairs = [f'{k}={v}' for k,v in self.console_class_parameters.items() ]
+            }
+        )
+        console_class_parameters_kv_pairs = [f'{k}={v}' for k, v in self.console_class_parameters.items()]
         console_class_parameters_str = ', '.join(console_class_parameters_kv_pairs)
-        
+
         child_class_initializator = f"cons = wexpect.{self.console_class_name}(wexpect.join_args({args}), {console_class_parameters_str});"
-        
-        commandLine = '"%s" %s "%s"' % (python_executable, 
-                                        ' '.join(pyargs), 
+
+        commandLine = '"%s" %s "%s"' % (python_executable,
+                                        ' '.join(pyargs),
                                         "import sys;"
                                         f"sys.path = {spath} + sys.path;"
                                         "import wexpect;"
@@ -382,64 +390,64 @@ class SpawnBase:
                                         "wexpect.console_reader.logger.info(f'Console finished2. {cons.child_exitstatus}');"
                                         "sys.exit(cons.child_exitstatus)"
                                         )
-        
+
         logger.info(f'Console starter command:{commandLine}')
-        
-        _, _, self.console_pid, __otid = win32process.CreateProcess(None, commandLine, None, None, False, 
-                                                        win32process.CREATE_NEW_CONSOLE, None, self.cwd, si)
-        
+
+        _, _, self.console_pid, __otid = win32process.CreateProcess(
+            None, commandLine, None, None, False, win32process.CREATE_NEW_CONSOLE, None, self.cwd, si)
+
     def get_console_process(self, force=False):
         if force or self.console_process is None:
             self.console_process = psutil.Process(self.console_pid)
         return self.console_process
-    
+
     def get_child_process(self, force=False):
         if force or self.console_process is None:
             self.child_process = self.get_console_process()
             self.child_pid = self.child_process.pid
             return self.child_process
-            
+
     def close(self):   # File-like object.
         """ Closes the child console."""
-        
+
         self.closed = self.terminate()
-    
+
     def terminate(self, force=False):
         """Terminate the child. Force not used. """
 
         if not self.isalive():
             return True
-        
+
         self.kill()
         time.sleep(self.delayafterterminate)
         if not self.isalive():
             return True
-                
+
         return False
-       
+
     def isalive(self, trust_console=True):
         """True if the child is still alive, false otherwise"""
         if trust_console:
             if self.flag_eof:
                 return False
-        
+
         if self.child_process is None:
             # Child process has not been started... Not alive
             return False
-        
+
         try:
             self.exitstatus = self.child_process.wait(timeout=0)
             logger.info(f'exitstatus: {self.exitstatus}')
         except psutil.TimeoutExpired:
             return True
-    
+
     def kill(self, sig=signal.SIGTERM):
         """Sig == sigint for ctrl-c otherwise the child is terminated."""
         try:
             self.child_process.send_signal(sig)
         except psutil.NoSuchProcess as e:
             logger.info('Child has already died. %s', e)
-    
+
     def wait(self, child=True, console=False):
         if child:
             self.exitstatus = self.child_process.wait()
@@ -448,8 +456,8 @@ class SpawnBase:
             self.exitstatus = self.console_process.wait()
             logger.info(f'exitstatus: {self.exitstatus}')
         return self.exitstatus
-        
-    def read (self, size = -1):   # File-like object.
+
+    def read(self, size=-1):   # File-like object.
         """This reads at most "size" bytes from the file (less if the read hits
         EOF before obtaining size bytes). If the size argument is negative or
         omitted, read all data until EOF is reached. The bytes are returned as
@@ -459,7 +467,7 @@ class SpawnBase:
         if size == 0:
             return ''
         if size < 0:
-            self.expect (self.delimiter) # delimiter default is EOF
+            self.expect(self.delimiter)     # delimiter default is EOF
             return self.before
 
         # I could have done this more directly by not using expect(), but
@@ -470,12 +478,12 @@ class SpawnBase:
         # Note, it's OK if size==-1 in the regex. That just means it
         # will never match anything in which case we stop only on EOF.
         cre = re.compile('.{%d}' % size, re.DOTALL)
-        index = self.expect ([cre, self.delimiter]) # delimiter default is EOF
+        index = self.expect([cre, self.delimiter])      # delimiter default is EOF
         if index == 0:
-            return self.after ### self.before should be ''. Should I assert this?
+            return self.after   # self.before should be ''. Should I assert this?
         return self.before
 
-    def readline (self, size = -1):    # File-like object.
+    def readline(self, size=-1):    # File-like object.
         """This reads and returns one entire line. A trailing newline is kept
         in the string, but may be absent when a file ends with an incomplete
         line. Note: This readline() looks for a \\r\\n pair even on UNIX
@@ -487,24 +495,24 @@ class SpawnBase:
 
         if size == 0:
             return ''
-        index = self.expect (['\r\n', self.delimiter]) # delimiter default is EOF
+        index = self.expect(['\r\n', self.delimiter])  # delimiter default is EOF
         if index == 0:
             return self.before + '\r\n'
         else:
             return self.before
 
-    def __iter__ (self):    # File-like object.
+    def __iter__(self):     # File-like object.
         """This is to support iterators over a file-like object.
         """
 
         return self
 
-    def read_nonblocking (self, size = 1):
+    def read_nonblocking(self, size=1):
         """Virtual definition
         """
         raise NotImplementedError
 
-    def __next__ (self):    # File-like object.
+    def __next__(self):     # File-like object.
         """This is to support iterators over a file-like object.
         """
 
@@ -519,7 +527,7 @@ class SpawnBase:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.terminate()
 
-    def readlines (self, sizehint = -1):    # File-like object.
+    def readlines(self, sizehint=-1):     # File-like object.
         """This reads until EOF using readline() and returns a list containing
         the lines thus read. The optional "sizehint" argument is ignored. """
 
@@ -533,17 +541,16 @@ class SpawnBase:
 
     def isatty(self):   # File-like object.
         """The child is always created with a console."""
-        
+
         return True
 
     def write(self, s):   # File-like object.
-
         """This is similar to send() except that there is no return value.
         """
 
         self.send(s)
 
-    def writelines (self, sequence):   # File-like object.
+    def writelines(self, sequence):   # File-like object.
         """This calls write() for each element in the sequence. The sequence
         can be any iterable object producing strings, typically a list of
         strings. This does not add line separators There is no return value.
@@ -553,11 +560,10 @@ class SpawnBase:
             self.write(s)
 
     def sendline(self, s=''):
-
         """This is like send(), but it adds a line feed (os.linesep). This
         returns the number of bytes written. """
 
-        n = self.send(s+'\r\n')
+        n = self.send(s + '\r\n')
         return n
 
     def sendeof(self):
@@ -573,33 +579,33 @@ class SpawnBase:
         # platform does not define VEOF so assume CTRL-D
         char = chr(4)
         self.send(char)
-        
+
     def send(self, s, delaybeforesend=None):
         """Virtual definition
         """
         if delaybeforesend is None:
             delaybeforesend = self.delaybeforesend
-            
+
         if delaybeforesend:
             time.sleep(delaybeforesend)
-            
+
         return self._send_impl(s)
-        
+
     def _send_impl(self, s):
         """Virtual definition
         """
         raise NotImplementedError
-         
+
     def connect_to_child(self):
         """Virtual definition
         """
         raise NotImplementedError
-        
+
     def disconnect_from_child(self):
         """Virtual definition
         """
         raise NotImplementedError
-    
+
     def compile_pattern_list(self, patterns):
         """This compiles a pattern-string or a list of pattern-strings.
         Patterns must be a StringType, EOF, TIMEOUT, SRE_Pattern, or a list of
@@ -629,7 +635,7 @@ class SpawnBase:
         if type(patterns) is not list:
             patterns = [patterns]
 
-        compile_flags = re.DOTALL # Allow dot to match \n
+        compile_flags = re.DOTALL   # Allow dot to match \n
         if self.ignorecase:
             compile_flags = compile_flags | re.IGNORECASE
         compiled_pattern_list = []
@@ -643,12 +649,16 @@ class SpawnBase:
             elif type(p) is type(re.compile('')):
                 compiled_pattern_list.append(p)
             else:
-                logger.warning("TypeError ('Argument must be one of StringTypes, EOF, TIMEOUT, SRE_Pattern, or a list of those type. %s' % str(type(p)))")
-                raise TypeError ('Argument must be one of StringTypes, EOF, TIMEOUT, SRE_Pattern, or a list of those type. %s' % str(type(p)))
+                logger.warning(
+                    "TypeError: 'Argument must be one of StringTypes, EOF, TIMEOUT, SRE_Pattern, or"
+                    " a list of those type. %s' % str(type(p))")
+                raise TypeError(
+                    'Argument must be one of StringTypes, EOF, TIMEOUT, SRE_Pattern, or a list of'
+                    ' those type. %s' % str(type(p)))
 
         return compiled_pattern_list
 
-    def expect(self, pattern, timeout = -1, searchwindowsize=None):
+    def expect(self, pattern, timeout=-1, searchwindowsize=None):
         """This seeks through the stream until a pattern is matched. The
         pattern is overloaded and may take several types. The pattern can be a
         StringType, EOF, a compiled re, or a list of any of those types.
@@ -727,7 +737,7 @@ class SpawnBase:
         compiled_pattern_list = self.compile_pattern_list(pattern)
         return self.expect_list(compiled_pattern_list, timeout, searchwindowsize)
 
-    def expect_list(self, pattern_list, timeout = -1, searchwindowsize = -1):
+    def expect_list(self, pattern_list, timeout=-1, searchwindowsize=-1):
         """This takes a list of compiled regular expressions and returns the
         index into the pattern_list that matched the child output. The list may
         also contain EOF or TIMEOUT (which are not compiled regular
@@ -740,7 +750,7 @@ class SpawnBase:
 
         return self.expect_loop(searcher_re(pattern_list), timeout, searchwindowsize)
 
-    def expect_exact(self, pattern_list, timeout = -1, searchwindowsize = -1):
+    def expect_exact(self, pattern_list, timeout=-1, searchwindowsize=-1):
         """This is similar to expect(), but uses plain string matching instead
         of compiled regular expressions in 'pattern_list'. The 'pattern_list'
         may be a string; a list or other sequence of strings; or TIMEOUT and
@@ -753,17 +763,21 @@ class SpawnBase:
         This method is also useful when you don't want to have to worry about
         escaping regular expression characters that you want to match."""
 
-        if not isinstance(pattern_list, list): 
+        if not isinstance(pattern_list, list):
             pattern_list = [pattern_list]
-            
+
         for p in pattern_list:
             if type(p) not in (str,) and p not in (TIMEOUT, EOF):
-                logger.warning('Argument must be one of StringTypes, EOF, TIMEOUT, or a list of those type. %s' % str(type(p)))
-                raise TypeError ('Argument must be one of StringTypes, EOF, TIMEOUT, or a list of those type. %s' % str(type(p)))
-            
+                logger.warning(
+                    'TypeError: Argument must be one of StringTypes, EOF, TIMEOUT, or a list of'
+                    ' those type. %s' % str(type(p)))
+                raise TypeError(
+                    'Argument must be one of StringTypes, EOF, TIMEOUT, or a list of those type. '
+                    '%s' % str(type(p)))
+
         return self.expect_loop(searcher_string(pattern_list), timeout, searchwindowsize)
 
-    def expect_loop(self, searcher, timeout = -1, searchwindowsize = -1):
+    def expect_loop(self, searcher, timeout=-1, searchwindowsize=-1):
         """This is the common loop used inside expect. The 'searcher' should be
         an instance of searcher_re or searcher_string, which describes how and what
         to search for in the input.
@@ -775,33 +789,33 @@ class SpawnBase:
         if timeout == -1:
             timeout = self.timeout
         if timeout is not None:
-            end_time = time.time() + timeout 
+            end_time = time.time() + timeout
         if searchwindowsize == -1:
             searchwindowsize = self.searchwindowsize
-            
+
         logger.debug(f'searcher: {searcher}')
 
         try:
             incoming = self.buffer
             freshlen = len(incoming)
-            while True: # Keep reading until exception or return.
+            while True:     # Keep reading until exception or return.
                 index = searcher.search(incoming, freshlen, searchwindowsize)
                 if index >= 0:
-                    self.buffer = incoming[searcher.end : ]
-                    self.before = incoming[ : searcher.start]
-                    self.after = incoming[searcher.start : searcher.end]
+                    self.buffer = incoming[searcher.end:]
+                    self.before = incoming[:searcher.start]
+                    self.after = incoming[searcher.start:searcher.end]
                     self.match = searcher.match
                     self.match_index = index
                     return self.match_index
                 # No match at this point
                 if timeout is not None and end_time < time.time():
                     logger.info('Timeout exceeded in expect_any().')
-                    raise TIMEOUT ('Timeout exceeded in expect_any().')
-                # Still have time left, so read more data        
+                    raise TIMEOUT('Timeout exceeded in expect_any().')
+                # Still have time left, so read more data
                 self.isalive()
                 c = self.read_nonblocking(self.maxread)
                 freshlen = len(c)
-                time.sleep (0.01)
+                time.sleep(0.01)
                 incoming += c
         except EOF as e:
             self.buffer = ''
@@ -831,26 +845,32 @@ class SpawnBase:
                 self.match_index = None
                 logger.info(f'TIMEOUT: {e}\n{self}')
                 raise TIMEOUT(f'{e}\n{self}')
-        except:
+        except Exception:
             self.before = incoming
             self.after = None
             self.match = None
             self.match_index = None
             raise
 
+
 class SpawnPipe(SpawnBase):
-    
+
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
-        logfile=None, cwd=None, env=None, codepage=None, echo=True, interact=False, **kwargs):
+                 logfile=None, cwd=None, env=None, codepage=None, echo=True, interact=False,
+                 **kwargs):
         self.pipe = None
         self.console_class_name = 'ConsoleReaderPipe'
         self.console_class_parameters = {}
-        
-        super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
-             searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
-    
-        self.delayafterterminate = 1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
-        
+
+        super().__init__(
+            command=command, args=args, timeout=timeout, maxread=maxread,
+            searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo,
+            interact=interact)
+
+        # Sets delay in terminate() method to allow kernel time to update process status. Time in
+        # seconds.
+        self.delayafterterminate = 1
+
     def connect_to_child(self):
         pipe_name = 'wexpect_{}'.format(self.console_pid)
         pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
@@ -867,22 +887,23 @@ class SpawnPipe(SpawnBase):
                     None
                 )
                 logger.debug('Pipe found')
-                res = win32pipe.SetNamedPipeHandleState(self.pipe, win32pipe.PIPE_READMODE_MESSAGE, None, None)
+                res = win32pipe.SetNamedPipeHandleState(self.pipe, win32pipe.PIPE_READMODE_MESSAGE,
+                                                        None, None)
                 if res == 0:
                     logger.debug(f"SetNamedPipeHandleState return code: {res}")
                 return
             except pywintypes.error as e:
-                if e.args[0] == winerror.ERROR_FILE_NOT_FOUND:  #2
+                if e.args[0] == winerror.ERROR_FILE_NOT_FOUND:      # 2
                     logger.debug("no pipe, trying again in a bit later")
                     time.sleep(0.2)
                 else:
                     raise
-    
+
     def disconnect_from_child(self):
         if self.pipe:
             win32file.CloseHandle(self.pipe)
-            
-    def read_nonblocking (self, size = 1):
+
+    def read_nonblocking(self, size=1):
         """This reads at most size characters from the child application. If
         the end of file is read then an EOF exception will be raised.
 
@@ -895,24 +916,24 @@ class SpawnPipe(SpawnBase):
 
         if self.closed:
             logger.warning('I/O operation on closed file in read_nonblocking().')
-            raise ValueError ('I/O operation on closed file in read_nonblocking().')
-            
+            raise ValueError('I/O operation on closed file in read_nonblocking().')
+
         try:
             s = win32file.ReadFile(self.pipe, size)[1]
-            
+
             if s:
                 logger.debug(f'Readed: {s}')
             else:
                 logger.spam(f'Readed: {s}')
-                
+
             if b'\x04' in s:
                 self.flag_eof = True
                 logger.info("EOF: EOF character has been arrived")
                 raise EOF('EOF character has been arrived')
-                
+
             return s.decode()
         except pywintypes.error as e:
-            if e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
+            if e.args[0] == winerror.ERROR_BROKEN_PIPE:   # 109
                 self.flag_eof = True
                 logger.info("EOF('broken pipe, bye bye')")
                 raise EOF('broken pipe, bye bye')
@@ -924,7 +945,7 @@ class SpawnPipe(SpawnBase):
                 raise EOF('The pipe is being closed.')
             else:
                 raise
-    
+
     def _send_impl(self, s):
         """This sends a string to the child process. This returns the number of
         bytes written. If a log file was set then the data is also written to
@@ -937,7 +958,7 @@ class SpawnPipe(SpawnBase):
             win32file.WriteFile(self.pipe, s)
             logger.spam(f"WriteFile finished.")
         except pywintypes.error as e:
-            if e.args[0] == winerror.ERROR_BROKEN_PIPE:   #109
+            if e.args[0] == winerror.ERROR_BROKEN_PIPE:   # 109
                 logger.info("EOF: broken pipe, bye bye")
                 raise EOF("broken pipe, bye bye")
             elif e.args[0] == winerror.ERROR_NO_DATA:
@@ -947,9 +968,9 @@ class SpawnPipe(SpawnBase):
                 logger.info("The pipe is being closed.")
                 raise EOF("The pipe is being closed.")
             else:
-                raise            
+                raise
         return len(s)
-    
+
     def kill(self, sig=signal.SIGTERM):
         """Sig == sigint for ctrl-c otherwise the child is terminated."""
         try:
@@ -961,20 +982,25 @@ class SpawnPipe(SpawnBase):
 
 
 class SpawnSocket(SpawnBase):
-    
+
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
-        logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321, host='127.0.0.1', interact=False):
+                 logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321,
+                 host='127.0.0.1', interact=False):
         self.port = port
         self.host = host
         self.sock = None
         self.console_class_name = 'ConsoleReaderSocket'
         self.console_class_parameters = {'port': port}
-        
-        super().__init__(command=command, args=args, timeout=timeout, maxread=maxread,
-             searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo, interact=interact)
-        
-        self.delayafterterminate = 1 # Sets delay in terminate() method to allow kernel time to update process status. Time in seconds.
-        
+
+        super().__init__(
+            command=command, args=args, timeout=timeout, maxread=maxread,
+            searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo,
+            interact=interact)
+
+        # Sets delay in terminate() method to allow kernel time to update process status. Time in
+        # seconds.
+        self.delayafterterminate = 1
+
     def _send_impl(self, s):
         """This sends a string to the child process. This returns the number of
         bytes written. If a log file was set then the data is also written to
@@ -983,18 +1009,18 @@ class SpawnSocket(SpawnBase):
             s = str.encode(s)
         self.sock.sendall(s)
         return len(s)
-         
+
     def connect_to_child(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((self.host, self.port))
         self.sock.settimeout(.2)
-        
+
     def disconnect_from_child(self):
         if self.sock:
             self.sock.close()
             self.sock = None
 
-    def read_nonblocking (self, size = 1):
+    def read_nonblocking(self, size=1):
         """This reads at most size characters from the child application. If
         the end of file is read then an EOF exception will be raised.
 
@@ -1007,22 +1033,21 @@ class SpawnSocket(SpawnBase):
 
         if self.closed:
             logger.info('I/O operation on closed file in read_nonblocking().')
-            raise ValueError ('I/O operation on closed file in read_nonblocking().')
-        
+            raise ValueError('I/O operation on closed file in read_nonblocking().')
+
         try:
             s = self.sock.recv(size)
-            
+
             if s:
                 logger.debug(f'Readed: {s}')
             else:
                 logger.spam(f'Readed: {s}')
-                
-                    
+
             if EOF_CHAR in s:
                 self.flag_eof = True
                 logger.info("EOF: EOF character has been arrived")
                 raise EOF('EOF character has been arrived')
-                  
+
         except ConnectionResetError:
             self.flag_eof = True
             logger.info("EOF('ConnectionResetError')")
@@ -1031,7 +1056,7 @@ class SpawnSocket(SpawnBase):
             return ''
 
         return s.decode()
-    
+
     def kill(self, sig=signal.SIGTERM):
         """Sig == sigint for ctrl-c otherwise the child is terminated."""
         try:
@@ -1039,7 +1064,7 @@ class SpawnSocket(SpawnBase):
             self.send(SIGNAL_CHARS[sig])
         except EOF as e:
             logger.info(e)
-       
+
 
 class searcher_re (object):
     """This is regular expression string search helper for the
@@ -1080,12 +1105,12 @@ class searcher_re (object):
         """This returns a human-readable string that represents the state of
         the object."""
 
-        ss =  [ (n,'    %d: re.compile("%s")' % (n,str(s.pattern))) for n,s in self._searches]
-        ss.append((-1,'searcher_re:'))
+        ss = [(n, '    %d: re.compile("%s")' % (n, str(s.pattern))) for n, s in self._searches]
+        ss.append((-1, 'searcher_re:'))
         if self.eof_index >= 0:
-            ss.append ((self.eof_index,'    %d: EOF' % self.eof_index))
+            ss.append((self.eof_index, '    %d: EOF' % self.eof_index))
         if self.timeout_index >= 0:
-            ss.append ((self.timeout_index,'    %d: TIMEOUT' % self.timeout_index))
+            ss.append((self.timeout_index, '    %d: TIMEOUT' % self.timeout_index))
         ss.sort()
         ss = list(zip(*ss))[1]
         return '\n'.join(ss)
@@ -1096,7 +1121,7 @@ class searcher_re (object):
         'buffer' which have not been searched before.
 
         See class spawn for the 'searchwindowsize' argument.
-        
+
         If there is a match this returns the index of that string, and sets
         'start', 'end' and 'match'. Otherwise, returns -1."""
 
@@ -1107,7 +1132,7 @@ class searcher_re (object):
         if searchwindowsize is None:
             searchstart = 0
         else:
-            searchstart = max(0, len(buffer)-searchwindowsize)
+            searchstart = max(0, len(buffer) - searchwindowsize)
         for index, s in self._searches:
             match = s.search(buffer, searchstart)
             if match is None:
@@ -1123,8 +1148,8 @@ class searcher_re (object):
         self.match = the_match
         self.end = self.match.end()
         return best_index
-    
-    
+
+
 class searcher_string (object):
     """This is a plain string search helper for the spawn.expect_any() method.
 
@@ -1161,12 +1186,12 @@ class searcher_string (object):
         """This returns a human-readable string that represents the state of
         the object."""
 
-        ss =  [ (ns[0],'    %d: "%s"' % ns) for ns in self._strings ]
-        ss.append((-1,'searcher_string:'))
+        ss = [(ns[0], '    %d: "%s"' % ns) for ns in self._strings]
+        ss.append((-1, 'searcher_string:'))
         if self.eof_index >= 0:
-            ss.append ((self.eof_index,'    %d: EOF' % self.eof_index))
+            ss.append((self.eof_index, '    %d: EOF' % self.eof_index))
         if self.timeout_index >= 0:
-            ss.append ((self.timeout_index,'    %d: TIMEOUT' % self.timeout_index))
+            ss.append((self.timeout_index, '    %d: TIMEOUT' % self.timeout_index))
         ss.sort()
         ss = list(zip(*ss))[1]
         return '\n'.join(ss)
@@ -1196,12 +1221,12 @@ class searcher_string (object):
         # rescanning until we've read three more bytes.
         #
         # Sadly, I don't know enough about this interesting topic. /grahn
-        
+
         for index, s in self._strings:
             if searchwindowsize is None:
                 # the match, if any, can only be in the fresh data,
                 # or at the very end of the old data
-                offset = -(freshlen+len(s))
+                offset = -(freshlen + len(s))
             else:
                 # better obey searchwindowsize
                 offset = -searchwindowsize

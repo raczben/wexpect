@@ -1,7 +1,7 @@
 # __init__.py
 
 import os
-import pkg_resources 
+import pkg_resources
 
 try:
     spawn_class_name = os.environ['WEXPECT_SPAWN_CLASS']
@@ -22,10 +22,10 @@ if spawn_class_name == 'legacy_wexpect':
     from .legacy_wexpect import searcher_re
 
     __all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'split_command_line',
-    '__version__', 'ConsoleReader', 'join_args', 'searcher_string', 'searcher_re']
-    
+               '__version__', 'ConsoleReader', 'join_args', 'searcher_string', 'searcher_re']
+
 else:
-        
+
     from .wexpect_util import split_command_line
     from .wexpect_util import join_args
     from .wexpect_util import ExceptionPexpect
@@ -40,19 +40,19 @@ else:
     from .host import run
     from .host import searcher_string
     from .host import searcher_re
-    
+
     try:
         spawn = globals()[spawn_class_name]
     except KeyError:
         print(f'Error: no spawn class: {spawn_class_name}')
         raise
-        
+
     # The version is handled by the package: pbr, which derives the version from the git tags.
     try:
         __version__ = pkg_resources.require("wexpect")[0].version
-    except: # pragma: no cover
+    except Exception:     # pragma: no cover
         __version__ = '0.0.1.unkowndev0'
-        
+
     __all__ = ['split_command_line', 'join_args', 'ExceptionPexpect', 'EOF', 'TIMEOUT',
-           'ConsoleReaderSocket', 'ConsoleReaderPipe', 'spawn', 'SpawnSocket', 'SpawnPipe', 'run', 
-           'searcher_string', 'searcher_re', '__version__']
+               'ConsoleReaderSocket', 'ConsoleReaderPipe', 'spawn', 'SpawnSocket', 'SpawnPipe',
+               'run', 'searcher_string', 'searcher_re', '__version__']
