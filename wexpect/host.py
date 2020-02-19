@@ -87,6 +87,7 @@ from .wexpect_util import ExceptionPexpect
 from .wexpect_util import EOF
 from .wexpect_util import TIMEOUT
 from .wexpect_util import split_command_line
+from .wexpect_util import join_args
 from .wexpect_util import init_logger
 from .wexpect_util import EOF_CHAR
 from .wexpect_util import SIGNAL_CHARS
@@ -353,7 +354,7 @@ class SpawnBase:
                                   if getattr(sys, 'frozen', False) else
                                   os.path.abspath(__file__))
         spath = [os.path.dirname(dirname)]
-        pyargs = ['-c']
+        pyargs = ['-m']
         if getattr(sys, 'frozen', False):
             # If we are running 'frozen', add library.zip and lib\library.zip to sys.path
             # py2exe: Needs appropriate 'zipfile' option in setup script and 'bundle_files' 3
@@ -367,7 +368,12 @@ class SpawnBase:
                                           os.path.basename(os.path.splitext(sys.executable)[0])))
             pyargs.insert(0, '-S')  # skip 'import site'
 
-        if getattr(sys, 'frozen', False):
+        self.run_coverage = False
+
+        if self.run_coverage:
+            python_executable = 'coverage'
+            pyargs = ['run', '--parallel-mode', '-c']
+        elif getattr(sys, 'frozen', False):
             python_executable = os.path.join(dirname, 'python.exe')
         else:
             python_executable = os.path.join(os.path.dirname(sys.executable), 'python.exe')
@@ -380,27 +386,33 @@ class SpawnBase:
                 'codepage': self.codepage
             }
         )
-        console_class_parameters_kv_pairs = [f'{k}={v}' for k, v in self.console_class_parameters.items()]
-        console_class_parameters_str = ', '.join(console_class_parameters_kv_pairs)
+        console_class_parameters_kv_pairs = [
+            f'--{k}={v}' for k, v in self.console_class_parameters.items()
+        ]
+        console_class_parameters_str = ' '.join(console_class_parameters_kv_pairs)
 
-        child_class_initializator = f"cons = wexpect.{self.console_class_name}(wexpect.join_args({args}), {console_class_parameters_str});"
+        args_str = join_args(args)
+        child_class_initializator = (
+            f"wexpect --console_reader_class {self.console_class_name}"
+            f" {console_class_parameters_str} -- {args_str}"
+        )
 
-        commandLine = '"%s" %s "%s"' % (python_executable,
+        commandLine = '"%s" %s %s' % (python_executable,
                                         ' '.join(pyargs),
-                                        "import sys;"
-                                        f"sys.path = {spath} + sys.path;"
-                                        "import wexpect;"
-                                        "import time;"
-                                        "wexpect.console_reader.logger.info('loggerStart.');"
-                                        f"{child_class_initializator}"
-                                        "wexpect.console_reader.logger.info(f'Console finished2. {cons.child_exitstatus}');"
-                                        "sys.exit(cons.child_exitstatus)"
+                                        child_class_initializator
                                         )
 
         logger.info(f'Console starter command:{commandLine}')
 
+        environ = os.environ
+        python_path = environ.get('PYTHONPATH', '')
+        spath = ';'.join(spath)
+        environ['PYTHONPATH'] = f'{spath};{python_path}'
+
         _, _, self.console_pid, __otid = win32process.CreateProcess(
-            None, commandLine, None, None, False, win32process.CREATE_NEW_CONSOLE, None, self.cwd, si)
+            None, commandLine, None, None, False, win32process.CREATE_NEW_CONSOLE, environ,
+            self.cwd,  si
+        )
 
     def get_console_process(self, force=False):
         if force or self.console_process is None:
