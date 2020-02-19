@@ -97,7 +97,7 @@ init_logger(logger)
 
 
 def run(command, timeout=-1, withexitstatus=False, events=None, extra_args=None, logfile=None,
-            cwd=None, env=None, **kwargs):
+        cwd=None, env=None, **kwargs):
     """
     This function runs the given command; waits for it to finish; then
     returns all output as a string. STDERR is included in output. If the full
@@ -181,7 +181,7 @@ def run(command, timeout=-1, withexitstatus=False, events=None, extra_args=None,
                 child_result_list.append(child.before)
             if type(responses[index]) in (str,):
                 child.send(responses[index])
-            elif type(responses[index]) is types.FunctionType:
+            elif isinstance(responses[index], types.FunctionType):
                 callback_result = responses[index](locals())
                 sys.stdout.flush()
                 if type(callback_result) in (str,):
@@ -261,13 +261,19 @@ class SpawnBase:
         self.interact_state = interact
 
         # If command is an int type then it may represent a file descriptor.
-        if type(command) == type(0):
-            logger.warning("ExceptionPexpect('Command is an int type. If this is a file descriptor then maybe you want to use fdpexpect.fdspawn which takes an existing file descriptor instead of a command string.')")
-            raise ExceptionPexpect('Command is an int type. If this is a file descriptor then maybe you want to use fdpexpect.fdspawn which takes an existing file descriptor instead of a command string.')
+        if isinstance(command, int):
+            logger.warning(
+                "ExceptionPexpect :'Command is an int type. If this is a file descriptor then maybe"
+                " you want to use fdpexpect.fdspawn which takes an existing file descriptor instead"
+                " of a command string.')")
+            raise ExceptionPexpect(
+                'Command is an int type. If this is a file descriptor then maybe you want to use'
+                ' fdpexpect.fdspawn which takes an existing file descriptor instead of a command '
+                'string.')
 
-        if type (args) != type([]):
+        if not isinstance(args, list):
             logger.warning("TypeError ('The argument, args, must be a list.')")
-            raise TypeError ('The argument, args, must be a list.')
+            raise TypeError('The argument, args, must be a list.')
 
         if args == []:
             self.args = split_command_line(command)

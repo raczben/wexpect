@@ -262,7 +262,7 @@ class ConsoleReaderBase:
 
         self.consin = win32console.GetStdHandle(win32console.STD_INPUT_HANDLE)
 
-        rect = win32console.PySMALL_RECTType(0, 0, window_size_x-1, window_size_y-1)
+        rect = win32console.PySMALL_RECTType(0, 0, window_size_x - 1, window_size_y - 1)
         consout.SetConsoleWindowInfo(True, rect)
         size = win32console.PyCOORDType(buffer_size_x, buffer_size_y)
         consout.SetConsoleScreenBufferSize(size)
