@@ -145,7 +145,7 @@ def join_args(args):
     spaces or any of the characters ^!$%&()[]{}=;'+,`~"""
     commandline = []
     for arg in args:
-        if re.search('[\^!$%&()[\]{}=;\'+,`~\s]', arg):
+        if re.search('[\\^!$%&()[\\]{}=;\'+,`~\\s]', arg):
             arg = '"%s"' % arg
         commandline.append(arg)
     return ' '.join(commandline)

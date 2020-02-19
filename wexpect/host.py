@@ -646,7 +646,7 @@ class SpawnBase:
                 compiled_pattern_list.append(EOF)
             elif p is TIMEOUT:
                 compiled_pattern_list.append(TIMEOUT)
-            elif type(p) is type(re.compile('')):
+            elif isinstance(p, type(re.compile(''))):
                 compiled_pattern_list.append(p)
             else:
                 logger.warning(
