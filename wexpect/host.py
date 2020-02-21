@@ -346,40 +346,25 @@ class SpawnBase:
         return '\n'.join(s)
 
     def startChild(self, args, env):
+        '''Start the console process.
+
+        startChild() starts the console process with arguments to command it to create the read
+        child process. startChild() does not connect to console, it just creates it.
+
+        The console creation depends on if the host process is running in a normal python process,
+        or in a PyInstaller bundle.
+        '''
+
+        # startupinfo for Windows' CreateProcess.
         si = win32process.GetStartupInfo()
         si.dwFlags = win32process.STARTF_USESHOWWINDOW
-        si.wShowWindow = win32con.SW_HIDE
+        if not self.interact_state:
+            si.wShowWindow = win32con.SW_HIDE
 
-        dirname = os.path.dirname(sys.executable
-                                  if getattr(sys, 'frozen', False) else
-                                  os.path.abspath(__file__))
-        spath = [os.path.dirname(dirname)]
-        pyargs = ['-m']
-        if getattr(sys, 'frozen', False):
-            # If we are running 'frozen', add library.zip and lib\library.zip to sys.path
-            # py2exe: Needs appropriate 'zipfile' option in setup script and 'bundle_files' 3
-            spath.append(os.path.join(dirname, 'library.zip'))
-            spath.append(os.path.join(dirname, 'library.zip',
-                                      os.path.basename(os.path.splitext(sys.executable)[0])))
-            if os.path.isdir(os.path.join(dirname, 'lib')):
-                dirname = os.path.join(dirname, 'lib')
-                spath.append(os.path.join(dirname, 'library.zip'))
-                spath.append(os.path.join(dirname, 'library.zip',
-                                          os.path.basename(os.path.splitext(sys.executable)[0])))
-            pyargs.insert(0, '-S')  # skip 'import site'
-
-        self.run_coverage = False
-
-        if self.run_coverage:
-            python_executable = 'coverage'
-            pyargs = ['run', '--parallel-mode', '-c']
-        elif getattr(sys, 'frozen', False):
-            python_executable = os.path.join(dirname, 'python.exe')
-        else:
-            python_executable = os.path.join(os.path.dirname(sys.executable), 'python.exe')
-
+        # collect arguments for console
         self.console_class_parameters.update(
             {
+                'console_reader_class': self.console_class_name,
                 'host_pid': self.host_pid,
                 'local_echo': self.echo,
                 'interact': self.interact_state,
@@ -390,28 +375,56 @@ class SpawnBase:
             f'--{k}={v}' for k, v in self.console_class_parameters.items()
         ]
         console_class_parameters_str = ' '.join(console_class_parameters_kv_pairs)
-
         args_str = join_args(args)
-        child_class_initializator = (
-            f"wexpect --console_reader_class {self.console_class_name}"
-            f" {console_class_parameters_str} -- {args_str}"
-        )
+        console_args = f" {console_class_parameters_str} -- {args_str}"
 
-        commandLine = '"%s" %s %s' % (python_executable,
-                                        ' '.join(pyargs),
-                                        child_class_initializator
-                                        )
+        # set environment variables for the console
+        environ = os.environ
+
+        if getattr(sys, 'frozen', False):
+            '''Runing in a PyInstaller bundle:
+            Pyinstaller has no explicit python interpreter, so console-reader should be bundled
+            also, and host should call it as a windows executable.
+
+            https://pyinstaller.readthedocs.io/en/stable/runtime-information.html#using-sys-executable-and-sys-argv-0
+            https://github.com/pyinstaller/pyinstaller/issues/822
+            '''
+
+            if getattr(sys, '_MEIPASS', False):
+                raise Exception(
+                    '`sys.frozen` found, but `sys._MEIPASS` not. Only pyinstaller is'
+                    ' supported.'
+                )
+            dirname = os.path.dirname(sys.executable)
+
+            console_executable = os.path.join(dirname, '__main__.exe')
+            commandLine = f'"{console_executable}" {console_args}'
+
+        else:
+            '''Runing in a normal python process
+            '''
+            dirname = os.path.dirname(os.path.abspath(__file__))
+            spath = [os.path.dirname(dirname)]
+
+            pyargs = ['-m']
+            python_executable = sys.executable
+
+            # add current location to PYTHONPATH environment variable to be able to start the child.
+            python_path = environ.get('PYTHONPATH', '')
+            spath = ';'.join(spath)
+            environ['PYTHONPATH'] = f'{spath};{python_path}'
+
+            child_class_initializator = f"wexpect {console_args}"
+
+            pyargs = ' '.join(pyargs)
+            commandLine = f'"{python_executable}" {pyargs} {child_class_initializator}'
 
         logger.info(f'Console starter command:{commandLine}')
 
-        environ = os.environ
-        python_path = environ.get('PYTHONPATH', '')
-        spath = ';'.join(spath)
-        environ['PYTHONPATH'] = f'{spath};{python_path}'
-
+        # start the console-reader
         _, _, self.console_pid, __otid = win32process.CreateProcess(
             None, commandLine, None, None, False, win32process.CREATE_NEW_CONSOLE, environ,
-            self.cwd,  si
+            self.cwd, si
         )
 
     def get_console_process(self, force=False):
