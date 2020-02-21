@@ -390,14 +390,13 @@ class SpawnBase:
             https://github.com/pyinstaller/pyinstaller/issues/822
             '''
 
-            if getattr(sys, '_MEIPASS', False):
+            if not hasattr(sys, '_MEIPASS'):
                 raise Exception(
-                    '`sys.frozen` found, but `sys._MEIPASS` not. Only pyinstaller is'
-                    ' supported.'
+                    '`sys.frozen` found, but `sys._MEIPASS` not. Only pyinstaller is supported.'
                 )
             dirname = os.path.dirname(sys.executable)
 
-            console_executable = os.path.join(dirname, '__main__.exe')
+            console_executable = os.path.join(dirname, '..', 'wexpect', 'wexpect.exe')
             commandLine = f'"{console_executable}" {console_args}'
 
         else:
