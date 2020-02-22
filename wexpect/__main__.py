@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--local_echo', type=str, help='Echo sent characters', default=True)
     parser.add_argument('--interact', type=str, help='Show console window', default=False)
     args = parser.parse_args()
+    logger.info(f'Starter arguments: {args}')
 
     if args.console_reader_class == 'ConsoleReaderSocket':
         conole_reader_class = console_reader.ConsoleReaderSocket

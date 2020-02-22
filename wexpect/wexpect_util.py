@@ -76,7 +76,7 @@ def init_logger(logger):
         logger.setLevel(logger_level)
         logger_filename = f'{logger_filename}.log'
         os.makedirs(os.path.dirname(logger_filename), exist_ok=True)
-        fh = logging.FileHandler(logger_filename, 'w', 'utf-8')
+        fh = logging.FileHandler(logger_filename, 'a', 'utf-8')
         formatter = logging.Formatter(
             '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)

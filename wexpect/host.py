@@ -372,7 +372,7 @@ class SpawnBase:
             }
         )
         console_class_parameters_kv_pairs = [
-            f'--{k}={v}' for k, v in self.console_class_parameters.items()
+            f'--{k}={v}'for k, v in self.console_class_parameters.items() if v is not None 
         ]
         console_class_parameters_str = ' '.join(console_class_parameters_kv_pairs)
         args_str = join_args(args)
