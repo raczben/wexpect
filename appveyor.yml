@@ -20,6 +20,9 @@ environment:
     PYTHON: "C:\\Python37"
   - TOXENV: installed
     PYTHON: "C:\\Python37"
+  - TOXENV: pyinstaller
+    PYTHON: "C:\\Python37"
+    WEXPECT_SPAWN_CLASS: SpawnPipe
   - TOXENV: py37-legacy_wexpect
     COVERAGE_FILENAME: py37-legacy_wexpect_coverage.xml
     PYTHON: "C:\\Python37"
