@@ -33,7 +33,7 @@ import unittest
 import win32process
 import win32api
 import os
-from . import PexpectTestCase
+from tests import PexpectTestCase
 
 
 if "RUN_CONSOLE_READER_TEST" not in os.environ:

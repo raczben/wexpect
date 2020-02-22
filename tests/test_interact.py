@@ -30,7 +30,7 @@ SOFTWARE.
 import wexpect
 import time
 import unittest
-from . import PexpectTestCase
+from tests import PexpectTestCase
 
 class InteractTestCase(PexpectTestCase.PexpectTestCase):
 

@@ -27,7 +27,7 @@ import sys
 import os
 
 import wexpect
-from . import PexpectTestCase
+from tests import PexpectTestCase
 from .utils import no_coverage_env
 
 # Many of these test cases blindly assume that sequential directory

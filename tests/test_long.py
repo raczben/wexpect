@@ -22,7 +22,7 @@ import wexpect
 import unittest
 import sys
 import os
-from . import PexpectTestCase
+from tests import PexpectTestCase
 from . import long_printer
 
 puskas_wiki = long_printer.puskas_wiki

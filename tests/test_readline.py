@@ -31,7 +31,7 @@ import time
 import sys
 import os
 import unittest
-from . import PexpectTestCase
+from tests import PexpectTestCase
 
 here = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, here)

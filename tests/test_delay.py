@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from . import PexpectTestCase
+from tests import PexpectTestCase
 import wexpect
 
 

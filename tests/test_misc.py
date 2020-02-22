@@ -25,7 +25,7 @@ import os
 import time
 
 import wexpect
-from . import PexpectTestCase
+from tests import PexpectTestCase
 
 # the program cat(1) may display ^D\x08\x08 when \x04 (EOF, Ctrl-D) is sent
 _CAT_EOF = '^D\x08\x08'

@@ -23,7 +23,7 @@ import unittest
 import signal
 import sys
 import time
-from . import PexpectTestCase
+from tests import PexpectTestCase
 
 PYBIN = '"{}"'.format(sys.executable)
 

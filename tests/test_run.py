@@ -26,7 +26,7 @@ import tempfile
 import sys
 import os
 import re
-from . import PexpectTestCase
+from tests import PexpectTestCase
 
 unicode_type = str
 

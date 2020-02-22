@@ -20,7 +20,7 @@ PEXPECT LICENSE
 '''
 import wexpect
 import unittest
-from . import PexpectTestCase
+from tests import PexpectTestCase
 import gc
 import platform
 import time

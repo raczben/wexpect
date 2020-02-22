@@ -21,7 +21,7 @@ PEXPECT LICENSE
 import wexpect
 import unittest
 import time
-from . import PexpectTestCase
+from tests import PexpectTestCase
 
 class TestCaseConstructor(PexpectTestCase.PexpectTestCase):
     def test_constructor (self):

@@ -20,7 +20,7 @@ PEXPECT LICENSE
 '''
 import wexpect
 import unittest
-from . import PexpectTestCase
+from tests import PexpectTestCase
 
 class TestCaseSplitCommandLine(PexpectTestCase.PexpectTestCase):
     def test_split_sizes(self):
