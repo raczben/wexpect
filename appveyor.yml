@@ -13,11 +13,16 @@ environment:
   # Set default pytohn, the real matrinx is in the tox settings.
   matrix:
   - TOXENV: py37-default
-    PYTHON: "C:\\Python37"
-  - TOXENV: py37-legacy_wexpect
+    COVERAGE_FILENAME: py37-default_coverage.xml
+    COVERAGE_FILENAME: py37-legacy_wexpect_coverage.xml
     PYTHON: "C:\\Python37"
   - TOXENV: py37-spawn_pipe
+    COVERAGE_FILENAME: py37-spawn_pipe_coverage.xml
     PYTHON: "C:\\Python37"
+  - TOXENV: installed
+    PYTHON: "C:\\Python37"
+    PYTHON: "C:\\Python37"
+  - TOXENV: py37-legacy_wexpect
 
 build: off
 
@@ -31,18 +36,22 @@ test_script:
 after_test:
   # Upload code coverage results.
   # https://github.com/codecov/codecov-python/issues/158#issuecomment-514282362
-  - (codecov --no-color -X gcov --file %TOXENV%_coverage.xml --required ) || (sleep 30 && codecov --no-color -X gcov --file %TOXENV%_coverage.xml --required )
+  - IF "%COVERAGE_FILENAME%"!="" (
+      (codecov --no-color -X gcov --file %COVERAGE_FILENAME% --required ) || (sleep 30 && codecov --no-color -X gcov --file %COVERAGE_FILENAME% --required )
+    )
   # fill .pypirc file.
   # pypi
-  - cmd: "echo [pypi] > %USERPROFILE%\\.pypirc"
-  - cmd: "echo repository: https://upload.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo username: __token__ >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo password: %pypipw% >> %USERPROFILE%\\.pypirc"
+  - |-
+      "echo [pypi] > %USERPROFILE%\\.pypirc"
+      "echo repository: https://upload.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
+      "echo username: __token__ >> %USERPROFILE%\\.pypirc"
+      "echo password: %pypipw% >> %USERPROFILE%\\.pypirc"
   # testpypi
-  - cmd: "echo [testpypi] >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo repository: https://test.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo username: __token__ >> %USERPROFILE%\\.pypirc"
-  - cmd: "echo password: %testpypipw% >> %USERPROFILE%\\.pypirc"
+  - |-
+      "echo [testpypi] >> %USERPROFILE%\\.pypirc"
+      "echo repository: https://test.pypi.org/legacy/ >> %USERPROFILE%\\.pypirc"
+      "echo username: __token__ >> %USERPROFILE%\\.pypirc"
+      "echo password: %testpypipw% >> %USERPROFILE%\\.pypirc"
 
   # Create source distribution.
   - python -m setup sdist

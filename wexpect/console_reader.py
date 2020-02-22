@@ -107,7 +107,7 @@ class ConsoleReaderBase:
         self.child_pid = None
         self.enable_signal_chars = True
 
-        logger.info("ConsoleReader started")
+        logger.info(f'ConsoleReader started. location {os.path.abspath(__file__)}')
 
         if codepage is None:
             codepage = windll.kernel32.GetACP()

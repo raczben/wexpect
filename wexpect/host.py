@@ -261,6 +261,8 @@ class SpawnBase:
         self.searchwindowsize = searchwindowsize
         self.interact_state = interact
 
+        logger.info(f'Spawn started. location {os.path.abspath(__file__)}')
+
         # If command is an int type then it may represent a file descriptor.
         if isinstance(command, int):
             logger.warning(
@@ -372,7 +374,7 @@ class SpawnBase:
             }
         )
         console_class_parameters_kv_pairs = [
-            f'--{k}={v}'for k, v in self.console_class_parameters.items() if v is not None 
+            f'--{k}={v}'for k, v in self.console_class_parameters.items() if v is not None
         ]
         console_class_parameters_str = ' '.join(console_class_parameters_kv_pairs)
         args_str = join_args(args)
