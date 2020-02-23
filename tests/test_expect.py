@@ -109,13 +109,13 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         (one of the) the leftmost matches in the input? -- grahn)
         ... agreed! -jquast, the buffer ptr isn't forwarded on match, see first two test cases
         '''
-        p = wexpect.spawn('cat', timeout=5, echo=False)
+        p = wexpect.spawn('cat', timeout=5, echo=True)
         self._expect_order(p)
 
     def test_expect_order_exact (self):
         '''Like test_expect_order(), but using expect_exact().
         '''
-        p = wexpect.spawn('cat', timeout=5, echo=False)
+        p = wexpect.spawn('cat', timeout=5, echo=True)
         p.expect = p.expect_exact
         self._expect_order(p)
 
@@ -125,35 +125,42 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         p.sendline ('wxyz')
         p.sendline ('7890')
         p.sendeof ()
-        index = p.expect ([
-            '1234',
-            'abcd',
-            'wxyz',
-            wexpect.EOF,
-            '7890' ])
-        self.assertEqual(index,  0, (index, p.before, p.after))
-        index = p.expect ([
-            '54321',
-            wexpect.TIMEOUT,
-            '1234',
-            'abcd',
-            'wxyz',
-            wexpect.EOF], timeout=5)
-        self.assertEqual(index,  3, (index, p.before, p.after))
-        index = p.expect ([
-            '54321',
-            wexpect.TIMEOUT,
-            '1234',
-            'abcd',
-            'wxyz',
-            wexpect.EOF], timeout=5)
-        self.assertEqual(index,  4, (index, p.before, p.after))
-        index = p.expect ([
-            wexpect.EOF,
-            'abcd',
-            'wxyz',
-            '7890' ])
-        self.assertEqual(index,  3, (index, p.before, p.after))
+        for _ in range(2):
+            index = p.expect ([
+                '1234',
+                'abcd',
+                'wxyz',
+                wexpect.EOF,
+                '7890' ])
+            self.assertEqual(index,  0, (index, p.before, p.after))
+
+        for _ in range(2):
+            index = p.expect ([
+                '54321',
+                wexpect.TIMEOUT,
+                '1234',
+                'abcd',
+                'wxyz',
+                wexpect.EOF], timeout=5)
+            self.assertEqual(index,  3, (index, p.before, p.after))
+
+        for _ in range(2):
+            index = p.expect ([
+                '54321',
+                wexpect.TIMEOUT,
+                '1234',
+                'abcd',
+                'wxyz',
+                wexpect.EOF], timeout=5)
+            self.assertEqual(index,  4, (index, p.before, p.after))
+
+        for _ in range(2):
+            index = p.expect ([
+                wexpect.EOF,
+                'abcd',
+                'wxyz',
+                '7890' ])
+            self.assertEqual(index,  3, (index, p.before, p.after))
 
         index = p.expect ([
             'abcd',
