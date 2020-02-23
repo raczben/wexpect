@@ -10,22 +10,8 @@ environment:
     secure: N+tYP6JrVCZ12LX7MUmHYJ8kx07F4A1hXtmEW01RmhrrQBdylIf0SO/eEfW5f4ox3S4xG/lgGSzNlZckvgifrsYeeBkWwoSH5/AJ3SnOJ7HBVojVt2t3bAznS6x3aPT7WDpwGN7piwus9aHSmpKaOzRoEOBKfgHv3aUzb907C0d0Yr12LU/4cIoTAn7jMziifSq45Z50lsQwzYic/VkarxTh+GXuCCm1Mb8F686H8i6Smm1Q1n9BsXowYnzwdrTZSBVOUtpd48Mh9JKgSNhfmQ==
   testpypipw:
     secure: CcyBI8e/2LdIT2aYIytTAgR4795DNBDM/ztsz1kqZYYOeNc3zlJWLdYWrnjCHn5W6/ZcAHrsxCdCMHvtr6PIVgBRpl2RR3fk2jKTzKqJJsLW871q30BsE0kws32f1IiqfjVtLn8BUC91IJ2xBBXtOYktf1tCMi3zJMSF9+MIOQKIu298bIRnD1Lc+4lzcSZJOn4I7dOMdzlcCMRqhtO58TGwR/hD+22FHjyWVB8nLL18AO+XXS9lHSOUrH6rD5NYvVFZD68oV/RrCGAjRmfMnw==
-  # Set default pytohn, the real matrinx is in the tox settings.
-  matrix:
-  - TOXENV: py37-default
-    COVERAGE_FILENAME: py37-default_coverage.xml
-    PYTHON: "C:\\Python37"
-  - TOXENV: py37-spawn_pipe
-    COVERAGE_FILENAME: py37-spawn_pipe_coverage.xml
-    PYTHON: "C:\\Python37"
-  - TOXENV: installed
-    PYTHON: "C:\\Python37"
-  - TOXENV: pyinstaller
-    PYTHON: "C:\\Python37"
-    WEXPECT_SPAWN_CLASS: SpawnPipe
-  - TOXENV: py37-legacy_wexpect
-    COVERAGE_FILENAME: py37-legacy_wexpect_coverage.xml
-    PYTHON: "C:\\Python37"
+  # Set default pytohn, the matrinx is in the tox settings.
+  PYTHON: "C:\\Python37"
 
 build: on
 
@@ -46,8 +32,8 @@ test_script:
 after_test:
   # Upload code coverage results.
   # https://github.com/codecov/codecov-python/issues/158#issuecomment-514282362
-  - IF NOT "%COVERAGE_FILENAME%"=="" (
-      (codecov --no-color -X gcov --file %COVERAGE_FILENAME% --required ) || (sleep 30 && codecov --no-color -X gcov --file %COVERAGE_FILENAME% --required )
+  - for %%f in (*coverage.xml) do (
+    (codecov --no-color -X gcov --file %%f --required ) || (sleep 30 && codecov --no-color -X gcov --file %%f --required )
     )
     
   # fill .pypirc file.
@@ -63,7 +49,7 @@ after_test:
   - cmd: "echo password: %testpypipw% >> %USERPROFILE%\\.pypirc" 
 
 artifacts:
-  - path: dist\\wexpect*.tar.gz
+  - path: dist\wexpect*.tar.gz
     name: wexpect-source-distro
   
 deploy_script:
