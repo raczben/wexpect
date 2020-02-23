@@ -27,8 +27,15 @@ environment:
     COVERAGE_FILENAME: py37-legacy_wexpect_coverage.xml
     PYTHON: "C:\\Python37"
 
-build: off
+build: on
 
+build_script:
+  # Create source distribution.
+  - cmd: |
+      "%PYTHON%/python.exe" -m pip install --upgrade pip
+      "%PYTHON%/python.exe" -m pip install --upgrade setuptools wheel
+      "%PYTHON%/python.exe" -m setup sdist
+ 
 install:
   - set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
   - pip install .[test]
@@ -55,9 +62,11 @@ after_test:
   - cmd: "echo username: __token__ >> %USERPROFILE%\\.pypirc" 
   - cmd: "echo password: %testpypipw% >> %USERPROFILE%\\.pypirc" 
 
-  # Create source distribution.
-  - python -m setup sdist
-
+artifacts:
+  - path: dist\\wexpect*.tar.gz
+    name: wexpect-source-distro
+  
+deploy_script:
   # Upload to pypi.
   # More precisely. The master and release builds will be uploaded to pypi. Test branch will be
   # uploaded to test-pypi the test builds.
