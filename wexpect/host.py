@@ -210,7 +210,7 @@ def run(command, timeout=-1, withexitstatus=False, events=None, extra_args=None,
 class SpawnBase:
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
                  logfile=None, cwd=None, env=None, codepage=None, echo=True, safe_exit=True,
-                 interact=False, **kwargs):
+                 interact=False, coverage_console_reader=False, **kwargs):
         """This starts the given command in a child process. This does all the
         fork/exec type of stuff for a pty. This is called by __init__. If args
         is empty then command will be parsed (split on spaces) and args will be
@@ -250,6 +250,7 @@ class SpawnBase:
         self.cwd = cwd
         self.env = env
         self.echo = echo
+        self.coverage_console_reader = coverage_console_reader
         self.maxread = maxread      # max bytes to read at one time into buffer
         # delaybeforesend: Sets sleep time used just before sending data to child. Time in seconds.
         self.delaybeforesend = 0.1
@@ -409,6 +410,9 @@ class SpawnBase:
 
             pyargs = ['-m']
             python_executable = sys.executable
+
+            if self.coverage_console_reader:
+                pyargs = ['-m', 'coverage', 'run', '--parallel-mode', '-m']
 
             # add current location to PYTHONPATH environment variable to be able to start the child.
             python_path = environ.get('PYTHONPATH', '')
@@ -897,7 +901,7 @@ class SpawnPipe(SpawnBase):
         super().__init__(
             command=command, args=args, timeout=timeout, maxread=maxread,
             searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo,
-            interact=interact)
+            interact=interact, **kwargs)
 
         # Sets delay in terminate() method to allow kernel time to update process status. Time in
         # seconds.
@@ -1017,7 +1021,7 @@ class SpawnSocket(SpawnBase):
 
     def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
                  logfile=None, cwd=None, env=None, codepage=None, echo=True, port=4321,
-                 host='127.0.0.1', interact=False):
+                 host='127.0.0.1', interact=False, **kwargs):
         self.port = port
         self.host = host
         self.sock = None
@@ -1027,7 +1031,7 @@ class SpawnSocket(SpawnBase):
         super().__init__(
             command=command, args=args, timeout=timeout, maxread=maxread,
             searchwindowsize=searchwindowsize, cwd=cwd, env=env, codepage=codepage, echo=echo,
-            interact=interact)
+            interact=interact, **kwargs)
 
         # Sets delay in terminate() method to allow kernel time to update process status. Time in
         # seconds.
