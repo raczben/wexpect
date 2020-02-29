@@ -117,8 +117,9 @@ class ConsoleReaderBase:
             win32console.SetConsoleOutputCP(codepage)
             logger.info(
                 "Console output code page: %s" % ctypes.windll.kernel32.GetConsoleOutputCP())
-        except Exception as e:
-            logger.info(e)
+        except Exception as e: # pragma: no cover
+            # I hope this code is unreachable...
+            logger.error(e)
 
         try:
             self.create_connection(**kwargs)
@@ -132,8 +133,9 @@ class ConsoleReaderBase:
 
                 logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
 
-            except Exception:
-                logger.info(traceback.format_exc())
+            except Exception: # pragma: no cover
+                # I hope this code is unreachable...
+                logger.error(traceback.format_exc())
                 return
 
             if interact:
@@ -141,9 +143,9 @@ class ConsoleReaderBase:
                 self.interact()
 
             self.read_loop()
-        except Exception:
+        except Exception: # pragma: no cover
+            # I hope this code is unreachable...
             logger.error(traceback.format_exc())
-            time.sleep(.1)
         finally:
             try:
                 self.terminate_child()
@@ -153,9 +155,9 @@ class ConsoleReaderBase:
                 time.sleep(.1)
                 self.close_connection()
                 logger.info('Console finished.')
-            except Exception:
+            except Exception: # pragma: no cover
+                # I hope this code is unreachable...
                 logger.error(traceback.format_exc())
-                time.sleep(.1)
 
     def read_loop(self):
         paused = False
