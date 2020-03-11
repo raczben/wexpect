@@ -2,6 +2,7 @@
 
 [![Build status](https://ci.appveyor.com/api/projects/status/tbji72d5s0tagrt9?svg=true)](https://ci.appveyor.com/project/raczben/wexpect)
 [![codecov](https://codecov.io/gh/raczben/wexpect/branch/master/graph/badge.svg)](https://codecov.io/gh/raczben/wexpect)
+[![Documentation Status](https://readthedocs.org/projects/wexpect/badge/?version=latest)](https://wexpect.readthedocs.io/en/latest/?badge=latest)
 
 *Wexpect* is a Windows variant of [pexpect](https://pexpect.readthedocs.io/en/stable/).
 
@@ -17,13 +18,6 @@ them automatically.
 ## **Install**
 
     pip install wexpect
-
-OR
-
-Because wexpect a tiny project dropping the wexpect.py file into your working directory is usually
-good enough instead of installing. However in this case you need to install manually the pypiwin32
-dependence.
-
 
 ## **Usage**
 

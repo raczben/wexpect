@@ -9,10 +9,23 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+
+import os
+import sys
+from pbr.version import VersionInfo
+
+repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+print(repo_path)
+sys.path.insert(0, repo_path)
+
+# import wexpect
+
+os.environ['WEXPECT_SPAWN_CLASS'] = 'SpawnPipe'
+autodoc_mock_imports = ["pywintypes", "win32process", "win32con", "win32file", "winerror",
+    "win32pipe", "ctypes", "win32console", "win32gui"]
+
+# from ctypes import windll
+
 
 
 # -- Project information -----------------------------------------------------
@@ -21,8 +34,18 @@ project = 'wexpect'
 copyright = '2020, Benedek Racz'
 author = 'Benedek Racz'
 
-# The full version, including alpha/beta/rc tags
-release = '0.0.1'
+# The version info for the project you're documenting, acts as replacement for
+# |version| and |release|, also used in various other places throughout the
+# built documents.
+#
+# The short X.Y version.
+package_name='wexpect'
+info = VersionInfo(package_name)
+version = info.version_string()
+
+# The full version, including alpha/beta/rc tags.
+release = version
+
 
 
 # -- General configuration ---------------------------------------------------
@@ -30,7 +53,7 @@ release = '0.0.1'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [
+extensions = [ 'sphinx.ext.autodoc'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

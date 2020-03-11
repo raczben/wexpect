@@ -6,6 +6,11 @@ Wexpect version |version|
    :align: right
    :alt: Build status
    
+.. warning::
+    **UNDER CONSTRUCTION!!!**
+    Documentation is in a very preliminary state. I'm learning sphinx and
+    readthedocs.
+
 *Wexpect* is a Windows variant of `Pexpect <https://pexpect.readthedocs.io/en/stable/>`_
 Wexpect and Pexpect makes Python a better tool for controlling other applications.
 
@@ -29,8 +34,8 @@ Wexpect is on PyPI, and can be installed with standard tools::
 
     pip install wexpect
 
-Usage
-^^^^^
+Hello Wexpect
+^^^^^^^^^^^^^
 
 To interract with a child process use :code:`spawn` method:
 
@@ -49,15 +54,12 @@ For more information see [examples](./examples) folder.
 
 
 Contents:
+ 
 
 .. toctree::
    :maxdepth: 2
 
-   overview
    api/index
-   examples
-   FAQ
-   commonissues
    history
 
 Wexpect is developed `on Github <http://github.com/raczben/wexpect>`_. Please
