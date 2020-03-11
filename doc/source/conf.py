@@ -26,7 +26,8 @@ autodoc_mock_imports = ["pywintypes", "win32process", "win32con", "win32file", "
 
 # from ctypes import windll
 
-
+# The master toctree document.
+master_doc = 'index'
 
 # -- Project information -----------------------------------------------------
 
