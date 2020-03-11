@@ -22,7 +22,7 @@ sys.path.insert(0, repo_path)
 
 os.environ['WEXPECT_SPAWN_CLASS'] = 'SpawnPipe'
 autodoc_mock_imports = ["pywintypes", "win32process", "win32con", "win32file", "winerror",
-    "win32pipe", "ctypes", "win32console", "win32gui"]
+    "win32pipe", "ctypes", "win32console", "win32gui", "psutil"]
 
 # from ctypes import windll
 
