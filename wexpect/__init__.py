@@ -22,7 +22,8 @@ if spawn_class_name == 'legacy_wexpect':
     from .legacy_wexpect import searcher_re
 
     __all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'spawn', 'run', 'split_command_line',
-               '__version__', 'ConsoleReader', 'join_args', 'searcher_string', 'searcher_re']
+               '__version__', 'ConsoleReader', 'join_args', 'searcher_string', 'searcher_re',
+               'spawn_class_name']
 
 else:
 
@@ -55,4 +56,4 @@ else:
 
     __all__ = ['split_command_line', 'join_args', 'ExceptionPexpect', 'EOF', 'TIMEOUT',
                'ConsoleReaderSocket', 'ConsoleReaderPipe', 'spawn', 'SpawnSocket', 'SpawnPipe',
-               'run', 'searcher_string', 'searcher_re', '__version__']
+               'run', 'searcher_string', 'searcher_re', '__version__', 'spawn_class_name']

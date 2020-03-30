@@ -43,7 +43,7 @@ def main():
 
         try:
             args = parser.parse_args()
-        except SystemExit:
+        except SystemExit: # pragma: no cover
             logger.error('Unexpected exception.')
             logger.info(traceback.format_exc())
             raise
@@ -65,7 +65,7 @@ def main():
 
         sys.exit(cons.child_exitstatus)
 
-    except Exception as e:
+    except Exception as e: # pragma: no cover
         logger.error('Unexpected exception.')
         logger.info(traceback.format_exc())
         raise

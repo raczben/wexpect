@@ -17,7 +17,7 @@ PYBIN = '"{}"'.format(sys.executable)
 
 class TestCaseMisc(PexpectTestCase.PexpectTestCase):
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_isatty(self):
         " Test isatty() is True after spawning process on most platforms. "
         child = wexpect.spawn('cat', coverage_console_reader=True)
@@ -27,7 +27,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
             return 'skip'
         assert child.isatty()
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_read(self):
         " Test spawn.read by calls of various size. "
         child = wexpect.spawn('cat', coverage_console_reader=True)
@@ -40,7 +40,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         self.assertEqual(child.read(1), 'c')
         self.assertEqual(child.read(2), '\r\n')
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_readline_bin_echo(self):
         " Test spawn('echo'). "
         # given,
@@ -49,7 +49,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         # exercise,
         self.assertEqual(child.readline(), 'alpha beta\r\n')
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_readline(self):
         " Test spawn.readline(). "
         # when argument 0 is sent, nothing is returned.
@@ -77,7 +77,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
             assert not child.isalive()
         self.assertEqual(child.exitstatus, 0)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_iter(self):
         " iterating over lines of spawn.__iter__(). "
         child = wexpect.spawn('echo "abc\r\n123"', coverage_console_reader=True)
@@ -88,7 +88,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         page = page.replace(_CAT_EOF, '')
         self.assertEqual(page, 'abc\r\n123\r\n')
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_readlines(self):
         " reading all lines of spawn.readlines(). "
         child = wexpect.spawn('cat', echo=False, coverage_console_reader=True)
@@ -105,7 +105,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
             assert not child.isalive()
         self.assertEqual(child.exitstatus, 0)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_write(self):
         " write a character and return it in return. "
         child = wexpect.spawn('cat', coverage_console_reader=True)
@@ -114,7 +114,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         child.readline()
         self.assertEqual(child.readline(), 'a\r\n')
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_writelines(self):
         " spawn.writelines() "
         child = wexpect.spawn('cat', coverage_console_reader=True)
@@ -126,7 +126,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         line = child.readline()
         self.assertEqual(line, 'abc123xyz\r\n')
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_eof(self):
         " call to expect() after EOF is received raises wexpect.EOF "
         child = wexpect.spawn('cat', coverage_console_reader=True)
@@ -134,7 +134,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         with self.assertRaises(wexpect.EOF):
             child.expect('the unexpected')
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_with(self):
         "spawn can be used as a context manager"
         with wexpect.spawn(PYBIN + ' echo_w_prompt.py', coverage_console_reader=True) as p:
@@ -145,14 +145,14 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
 
         assert not p.isalive()
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_terminate(self):
         " test force terminate always succeeds (SIGKILL). "
         child = wexpect.spawn('cat', coverage_console_reader=True)
         child.terminate(force=1)
         assert child.terminated
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_bad_arguments_suggest_fdpsawn(self):
         " assert custom exception for spawn(int). "
         expect_errmsg = "maybe you want to use fdpexpect.fdspawn"
@@ -160,7 +160,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
                                      ".*" + expect_errmsg):
             wexpect.spawn(1, coverage_console_reader=True)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_bad_arguments_second_arg_is_list(self):
         " Second argument to spawn, if used, must be only a list."
         with self.assertRaises(TypeError):
@@ -170,7 +170,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
             # not even a tuple,
             wexpect.spawn('ls', ('-la',), coverage_console_reader=True)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_read_after_close_raises_value_error(self):
         " Calling read_nonblocking after close raises ValueError. "
         # as read_nonblocking underlies all other calls to read,
@@ -195,7 +195,7 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
             p.close()
             p.readlines()
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_isalive(self):
         " check isalive() before and after EOF. (True, False) "
         child = wexpect.spawn('cat', coverage_console_reader=True)
@@ -205,14 +205,14 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         assert child.isalive() is False
         self.assertFalse(child.isalive())
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_bad_type_in_expect(self):
         " expect() does not accept dictionary arguments. "
         child = wexpect.spawn('cat', coverage_console_reader=True)
         with self.assertRaises(TypeError):
             child.expect({})
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_cwd(self):
         " check keyword argument `cwd=' of wexpect.run() "
         try:
@@ -262,37 +262,37 @@ class TestCaseMisc(PexpectTestCase.PexpectTestCase):
         # exercise,
         self.assertEqual(search_string.__str__(), expected_output)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_searcher_as_string(self):
         " check searcher_string(..).__str__() "
         self._test_searcher_as(wexpect.searcher_string)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_searcher_as_string_with_EOF(self):
         " check searcher_string(..).__str__() that includes EOF "
         self._test_searcher_as(wexpect.searcher_string, plus=wexpect.EOF)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_searcher_as_string_with_TIMEOUT(self):
         " check searcher_string(..).__str__() that includes TIMEOUT "
         self._test_searcher_as(wexpect.searcher_string, plus=wexpect.TIMEOUT)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_searcher_re_as_string(self):
         " check searcher_re(..).__str__() "
         self._test_searcher_as(wexpect.searcher_re)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_searcher_re_as_string_with_EOF(self):
         " check searcher_re(..).__str__() that includes EOF "
         self._test_searcher_as(wexpect.searcher_re, plus=wexpect.EOF)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_searcher_re_as_string_with_TIMEOUT(self):
         " check searcher_re(..).__str__() that includes TIMEOUT "
         self._test_searcher_as(wexpect.searcher_re, plus=wexpect.TIMEOUT)
 
-    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy unsupported")
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
     def test_exception_tb(self):
         " test get_trace() filters away wexpect/__init__.py calls. "
         p = wexpect.spawn('sleep 1', coverage_console_reader=True)
