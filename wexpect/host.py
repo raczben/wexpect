@@ -351,7 +351,8 @@ class SpawnBase:
         console_args = f" {console_class_parameters_str} -- {args_str}"
 
         # set environment variables for the console
-        environ = os.environ
+        # Deep copy needed to prevent cycle-to-cycle growth. See #31 for more details.
+        environ = os.environ.copy()
 
         if getattr(sys, 'frozen', False):
             '''Runing in a PyInstaller bundle:
