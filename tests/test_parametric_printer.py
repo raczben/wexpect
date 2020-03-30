@@ -45,6 +45,7 @@ class TestCaseParametricPrinter(PexpectTestCase.PexpectTestCase):
         self._test(['a', 'b', 'c'], [16], [16], [-1, 0, 1])
         self._test(['a', 'b', 'c'], [16, 32, 64], [16, 32, 64], [-1, 0])
 
+    @unittest.skipIf(hasattr(wexpect, 'legacy_wexpect'), "legacy has bug around refreshing long consoles")
     def test_long_console(self):
 
         here = os.path.dirname(os.path.abspath(__file__))
@@ -77,7 +78,6 @@ class TestCaseParametricPrinter(PexpectTestCase.PexpectTestCase):
                         try:
                             self.assertEqual(self.p.before.splitlines()[1:-1], expected)
                         except:
-                            time.sleep(5)
                             raise
 
 if __name__ == '__main__':
