@@ -1,3 +1,5 @@
+test_01_installed/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -42,7 +44,7 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
-.coverage
+.coverage*
 .cache
 nosetests.xml
 coverage.xml

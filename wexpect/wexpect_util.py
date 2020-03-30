@@ -36,7 +36,9 @@ def spam(self, message, *args, **kws):
 logging.Logger.spam = spam
 
 
-def init_logger(logger):
+def init_logger(logger=None):
+    if logger is None:
+        logger = logging.getLogger('wexpect')
     try:
         logger_level = os.environ['WEXPECT_LOGGER_LEVEL']
         try:
@@ -160,3 +162,5 @@ class EOF(ExceptionPexpect):
 
 class TIMEOUT(ExceptionPexpect):
     """Raised when a read time exceeds the timeout. """
+
+init_logger()

@@ -65,8 +65,6 @@ from .wexpect_util import SIGNAL_CHARS
 
 logger = logging.getLogger('wexpect')
 
-init_logger(logger)
-
 
 def run(command, timeout=-1, withexitstatus=False, events=None, extra_args=None, logfile=None,
         cwd=None, env=None, **kwargs):

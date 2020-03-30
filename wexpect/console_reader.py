@@ -42,8 +42,6 @@ default_port = 4321
 #
 logger = logging.getLogger('wexpect')
 
-init_logger(logger)
-
 
 class ConsoleReaderBase:
     """Consol class (aka. client-side python class) for the child.
