@@ -96,7 +96,7 @@ class ConsoleReaderBase:
             try:
                 self.initConsole()
                 si = win32process.GetStartupInfo()
-                self.__childProcess, _, self.child_pid, self.__tid = win32process.CreateProcess(
+                self.__childProcess, _, self.child_pid, self.child_tid = win32process.CreateProcess(
                     None, path, None, None, False, 0, None, None, si)
                 self.child_process = psutil.Process(self.child_pid)
 
@@ -129,7 +129,6 @@ class ConsoleReaderBase:
                 logger.error(traceback.format_exc())
 
     def read_loop(self):
-        paused = False
 
         while True:
             if not self.isalive(self.host_process):
@@ -143,7 +142,20 @@ class ConsoleReaderBase:
 
             consinfo = self.consout.GetConsoleScreenBufferInfo()
             cursorPos = consinfo['CursorPosition']
-            self.send_to_host(self.readConsoleToCursor())
+
+            if cursorPos.Y > maxconsoleY:
+                '''If the console output becomes long, we suspend the child, read all output then
+                clear the console before we resume the child.
+                '''
+                logger.info('cursorPos %s' % cursorPos)
+                self.suspend_child()
+                time.sleep(.2)
+                self.send_to_host(self.readConsoleToCursor())
+                self.refresh_console()
+                self.resume_child()
+            else:
+                self.send_to_host(self.readConsoleToCursor())
+
             s = self.get_from_host()
             if s:
                 logger.debug(f'get_from_host: {s}')
@@ -156,17 +168,34 @@ class ConsoleReaderBase:
             s = s.decode()
             self.write(s)
 
-            if cursorPos.Y > maxconsoleY and not paused:
-                logger.info('cursorPos %s' % cursorPos)
-                self.suspendThread()
-                paused = True
-
-            if cursorPos.Y <= maxconsoleY and paused:
-                logger.info('cursorPos %s' % cursorPos)
-                self.resumeThread()
-                paused = False
 
             time.sleep(.02)
+
+    def suspend_child(self):
+        """Pauses the main thread of the child process."""
+        handle = windll.kernel32.OpenThread(win32con.THREAD_SUSPEND_RESUME, 0, self.child_tid)
+        win32process.SuspendThread(handle)
+
+    def resume_child(self):
+        """Un-pauses the main thread of the child process."""
+        handle = windll.kernel32.OpenThread(win32con.THREAD_SUSPEND_RESUME, 0, self.child_tid)
+        win32process.ResumeThread(handle)
+
+    def refresh_console(self):
+        """Clears the console after pausing the child and
+        reading all the data currently on the console."""
+
+        orig = win32console.PyCOORDType(0, 0)
+        self.consout.SetConsoleCursorPosition(orig)
+        self.__currentReadCo.X = 0
+        self.__currentReadCo.Y = 0
+        writelen = self.__consSize.X * self.__consSize.Y
+        # Use NUL as fill char because it displays as whitespace
+        # (if we interact() with the child)
+        self.consout.FillConsoleOutputCharacter(screenbufferfillchar, writelen, orig)
+
+        self.__bufferY = 0
+        self.__buffer.truncate(0)
 
     def terminate_child(self):
         try:
