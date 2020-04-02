@@ -8,7 +8,6 @@ import os
 
 import wexpect
 from tests import PexpectTestCase
-from .utils import no_coverage_env
 
 # Many of these test cases blindly assume that sequential directory
 # listings of the /bin directory will yield the same results.
@@ -279,14 +278,14 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
     def test_before_after(self):
         '''This tests expect() for some simple before/after things.
         '''
-        p = wexpect.spawn('%s -Wi list100.py' % PYTHONBINQUOTE, env=no_coverage_env())
+        p = wexpect.spawn('%s -Wi list100.py' % PYTHONBINQUOTE)
         self._before_after(p)
 
     def test_before_after_exact(self):
         '''This tests some simple before/after things, for
         expect_exact(). (Grahn broke it at one point.)
         '''
-        p = wexpect.spawn('%s -Wi list100.py' % PYTHONBINQUOTE, env=no_coverage_env())
+        p = wexpect.spawn('%s -Wi list100.py' % PYTHONBINQUOTE)
         # mangle the spawn so we test expect_exact() instead
         p.expect = p.expect_exact
         self._before_after(p)

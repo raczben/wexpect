@@ -814,6 +814,8 @@ class SpawnBase:
                     self.match_index = index
                     return self.match_index
                 # No match at this point
+                if self.flag_eof:
+                    raise EOF('EOF flag has been raised.')
                 if timeout is not None and end_time < time.time():
                     logger.info('Timeout exceeded in expect_any().')
                     raise TIMEOUT('Timeout exceeded in expect_any().')
@@ -932,10 +934,10 @@ class SpawnPipe(SpawnBase):
             else:
                 logger.spam(f'Readed: {s}')
 
-            if b'\x04' in s:
+            if EOF_CHAR in s:
                 self.flag_eof = True
                 logger.info("EOF: EOF character has been arrived")
-                raise EOF('EOF character has been arrived')
+                s = s.split(EOF_CHAR)[0]
 
             return s.decode()
         except pywintypes.error as e:
@@ -1052,7 +1054,7 @@ class SpawnSocket(SpawnBase):
             if EOF_CHAR in s:
                 self.flag_eof = True
                 logger.info("EOF: EOF character has been arrived")
-                raise EOF('EOF character has been arrived')
+                s = s.split(EOF_CHAR)[0]
 
         except ConnectionResetError:
             self.flag_eof = True
