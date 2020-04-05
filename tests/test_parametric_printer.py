@@ -24,6 +24,7 @@ class TestCaseParametricPrinter(PexpectTestCase.PexpectTestCase):
 
         self._test(['a'], range(1,200), [1], [0])
 
+        self.p.terminate()
 
     def test_random(self):
 
@@ -45,6 +46,8 @@ class TestCaseParametricPrinter(PexpectTestCase.PexpectTestCase):
         self._test(['a', 'b', 'c'], [16], [16], [-1, 0, 1])
         self._test(['a', 'b', 'c'], [16, 32, 64], [16, 32, 64], [-1, 0])
 
+        self.p.terminate()
+
     @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy has bug around refreshing long consoles")
     def test_long_console(self):
 
@@ -63,6 +66,8 @@ class TestCaseParametricPrinter(PexpectTestCase.PexpectTestCase):
         self.p.expect(self.prompt)
 
         self._test(['a', 'b', 'c', 'd', 'e', 'f'], [8, 16, 32, 64], [64, 128, 256], [-1, 0])
+
+        self.p.terminate()
 
     def _test(self, character_list, character_count_list, line_count_list, speed_ms_list):
 

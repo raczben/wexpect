@@ -411,7 +411,7 @@ class SpawnBase:
         if force or self.console_process is None:
             self.child_process = self.get_console_process()
             self.child_pid = self.child_process.pid
-            return self.child_process
+        return self.child_process
 
     def close(self):   # File-like object.
         """ Closes the child console."""
@@ -425,13 +425,12 @@ class SpawnBase:
             return True
 
         self.kill()
-        time.sleep(self.delayafterterminate)
-        if not self.isalive():
+        if not self.isalive(timeout = self.delayafterterminate):
             return True
 
         return False
 
-    def isalive(self, trust_console=True):
+    def isalive(self, trust_console=True, timeout=0):
         """True if the child is still alive, false otherwise"""
         if trust_console:
             if self.flag_eof:
@@ -441,20 +440,30 @@ class SpawnBase:
             # Child process has not been started... Not alive
             return False
 
+        if self.exitstatus is not None:
+            return False
+
         try:
-            self.exitstatus = self.child_process.wait(timeout=0)
+            self.exitstatus = self.child_process.wait(timeout=timeout)
             logger.info(f'exitstatus: {self.exitstatus}')
+            return False
         except psutil.TimeoutExpired:
             return True
 
     def kill(self, sig=signal.SIGTERM):
         """Sig == sigint for ctrl-c otherwise the child is terminated."""
         try:
-            self.child_process.send_signal(sig)
-        except psutil.NoSuchProcess as e:
-            logger.info('Child has already died. %s', e)
+            logger.info(f'Sending kill signal: {sig}')
+            self.send(SIGNAL_CHARS[sig])
+            self.terminated = True
+        except EOF as e:
+            logger.info(e)
 
     def wait(self, child=True, console=False):
+
+        if self.exitstatus is not None:
+            return self.exitstatus
+
         if child:
             self.exitstatus = self.child_process.wait()
             logger.info(f'exitstatus: {self.exitstatus}')
@@ -589,6 +598,10 @@ class SpawnBase:
     def send(self, s, delaybeforesend=None):
         """Virtual definition
         """
+        if self.flag_eof:
+            logger.info('EOF: End of file has been already detected.')
+            raise EOF('End of file has been already detected.')
+
         if delaybeforesend is None:
             delaybeforesend = self.delaybeforesend
 
@@ -814,6 +827,8 @@ class SpawnBase:
                     self.match_index = index
                     return self.match_index
                 # No match at this point
+                if self.flag_eof:
+                    raise EOF('EOF flag has been raised.')
                 if timeout is not None and end_time < time.time():
                     logger.info('Timeout exceeded in expect_any().')
                     raise TIMEOUT('Timeout exceeded in expect_any().')
@@ -835,8 +850,8 @@ class SpawnBase:
             else:
                 self.match = None
                 self.match_index = None
-                logger.info(f'EOF: {e}\n{self}')
-                raise EOF(f'{e}\n{self}')
+                logger.info('Raise EOF again')
+                raise
         except TIMEOUT as e:
             self.buffer = incoming
             self.before = incoming
@@ -875,7 +890,7 @@ class SpawnPipe(SpawnBase):
 
         # Sets delay in terminate() method to allow kernel time to update process status. Time in
         # seconds.
-        self.delayafterterminate = 1
+        self.delayafterterminate = 2
 
     def connect_to_child(self):
         pipe_name = 'wexpect_{}'.format(self.console_pid)
@@ -932,10 +947,10 @@ class SpawnPipe(SpawnBase):
             else:
                 logger.spam(f'Readed: {s}')
 
-            if b'\x04' in s:
+            if EOF_CHAR in s:
                 self.flag_eof = True
                 logger.info("EOF: EOF character has been arrived")
-                raise EOF('EOF character has been arrived')
+                s = s.split(EOF_CHAR)[0]
 
             return s.decode()
         except pywintypes.error as e:
@@ -966,25 +981,18 @@ class SpawnPipe(SpawnBase):
         except pywintypes.error as e:
             if e.args[0] == winerror.ERROR_BROKEN_PIPE:   # 109
                 logger.info("EOF: broken pipe, bye bye")
+                self.flag_eof = True
                 raise EOF("broken pipe, bye bye")
             elif e.args[0] == winerror.ERROR_NO_DATA:
                 '''232 (0xE8)
                 The pipe is being closed.
                 '''
                 logger.info("The pipe is being closed.")
+                self.flag_eof = True
                 raise EOF("The pipe is being closed.")
             else:
                 raise
         return len(s)
-
-    def kill(self, sig=signal.SIGTERM):
-        """Sig == sigint for ctrl-c otherwise the child is terminated."""
-        try:
-            logger.info(f'Sending kill signal: {sig}')
-            self.send(SIGNAL_CHARS[sig])
-            self.terminated = True
-        except EOF as e:
-            logger.info(e)
 
 
 class SpawnSocket(SpawnBase):
@@ -1005,7 +1013,7 @@ class SpawnSocket(SpawnBase):
 
         # Sets delay in terminate() method to allow kernel time to update process status. Time in
         # seconds.
-        self.delayafterterminate = 1
+        self.delayafterterminate = 2
 
     def _send_impl(self, s):
         """This sends a string to the child process. This returns the number of
@@ -1013,8 +1021,16 @@ class SpawnSocket(SpawnBase):
         the log. """
         if isinstance(s, str):
             s = str.encode(s)
-        self.sock.sendall(s)
-        return len(s)
+        try:
+            if s:
+                logger.debug(f"Writing: {s}")
+            self.sock.sendall(s)
+            logger.spam(f"WriteFile finished.")
+            return len(s)
+        except ConnectionResetError as e:
+            logger.info("ConnectionResetError")
+            self.flag_eof = True
+            raise EOF("ConnectionResetError")
 
     def connect_to_child(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1022,7 +1038,9 @@ class SpawnSocket(SpawnBase):
         self.sock.settimeout(.2)
 
     def disconnect_from_child(self):
+        logger.info('disconnect_from_child')
         if self.sock:
+            self.sock.shutdown(socket.SHUT_RDWR)
             self.sock.close()
             self.sock = None
 
@@ -1052,7 +1070,7 @@ class SpawnSocket(SpawnBase):
             if EOF_CHAR in s:
                 self.flag_eof = True
                 logger.info("EOF: EOF character has been arrived")
-                raise EOF('EOF character has been arrived')
+                s = s.split(EOF_CHAR)[0]
 
         except ConnectionResetError:
             self.flag_eof = True
@@ -1062,14 +1080,6 @@ class SpawnSocket(SpawnBase):
             return ''
 
         return s.decode()
-
-    def kill(self, sig=signal.SIGTERM):
-        """Sig == sigint for ctrl-c otherwise the child is terminated."""
-        try:
-            logger.info(f'Sending kill signal: {sig}')
-            self.send(SIGNAL_CHARS[sig])
-        except EOF as e:
-            logger.info(e)
 
 
 class searcher_re (object):

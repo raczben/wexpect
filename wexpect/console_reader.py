@@ -469,7 +469,9 @@ class ConsoleReaderSocket(ConsoleReaderBase):
 
     def close_connection(self):
         if self.connection:
+            self.connection.shutdown(socket.SHUT_RDWR)
             self.connection.close()
+            self.connection = None
 
     def send_to_host(self, msg):
         # convert to bytes

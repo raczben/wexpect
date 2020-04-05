@@ -63,6 +63,7 @@ def main():
             buffer_size_x=args.buffer_size_x, buffer_size_y=args.buffer_size_y,
             local_echo=str2bool(args.local_echo), interact=str2bool(args.interact))
 
+        logger.info(f'Exiting with status: {cons.child_exitstatus}')
         sys.exit(cons.child_exitstatus)
 
     except Exception as e: # pragma: no cover
