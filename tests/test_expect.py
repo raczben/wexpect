@@ -148,6 +148,10 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
             wexpect.EOF])
         self.assertEqual(index,  3, (index, p.before, p.after))
 
+        # Termination of the SpawnSocket is slow. We have to wait to prevent the failure of the next test.
+        if wexpect.spawn_class_name == 'SpawnSocket':
+            p.wait()
+
     def test_expect_index (self):
         '''This tests that mixed list of regex strings, TIMEOUT, and EOF all
         return the correct index when matched.
@@ -161,6 +165,9 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         p = wexpect.spawn('cat', timeout=5, echo=False)
         p.expect = p.expect_exact
         self._expect_index(p)
+        # Termination of the SpawnSocket is slow. We have to wait to prevent the failure of the next test.
+        if wexpect.spawn_class_name == 'SpawnSocket':
+            p.wait()
 
     def _expect_index (self, p):
         p.sendline ('1234')
@@ -218,6 +225,10 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         the_old_way = the_old_way.replace('\r\n', '\n'
                 ).replace('\r', '\n').replace('\n\n', '\n').rstrip()
         self.assertEqual(the_old_way,  the_new_way)
+        # Termination of the SpawnSocket is slow. We have to wait to prevent the failure of the next test.
+        if wexpect.spawn_class_name == 'SpawnSocket':
+            p.wait()
+
         p = wexpect.spawn('echo hello.?world')
         i = p.expect_exact('.?')
         self.assertEqual(p.before, 'hello')
@@ -236,6 +247,10 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
                 ).replace('\r', '\n').replace('\n\n', '\n').rstrip()
         self.assertEqual(the_old_way,  the_new_way)
 
+        # Termination of the SpawnSocket is slow. We have to wait to prevent the failure of the next test.
+        if wexpect.spawn_class_name == 'SpawnSocket':
+            p.wait()
+
     def test_expect_timeout (self):
         p = wexpect.spawn('cat', timeout=5)
         p.expect(wexpect.TIMEOUT) # This tells it to wait for timeout.
@@ -250,6 +265,9 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         else:
             self.fail ('Expected an EOF exception.')
 
+        if wexpect.spawn_class_name == 'SpawnSocket':
+            p.wait()
+
     def test_buffer_interface(self):
         p = wexpect.spawn('cat', timeout=5)
         p.sendline ('Hello')
@@ -257,6 +275,8 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         assert len(p.buffer)
         p.buffer = 'Testing'
         p.sendeof ()
+        if wexpect.spawn_class_name == 'SpawnSocket':
+            p.wait()
 
     def _before_after(self, p):
         p.timeout = 5
@@ -274,6 +294,9 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         self.assertEqual(p.after, wexpect.EOF)
         assert p.before.startswith(', 51, 52'), p.before[:20]
         assert p.before.endswith(', 99]\r\n'), p.before[-20:]
+
+        if wexpect.spawn_class_name == 'SpawnSocket':
+            p.wait()
 
     def test_before_after(self):
         '''This tests expect() for some simple before/after things.
@@ -313,6 +336,8 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         p.sendline('list(range(4*5))')
         self.assertEqual(p.expect(['12,', '2,']), 1)
 
+        p.sendline('exit()')
+
     def test_ordering(self):
         '''This tests expect() for which pattern is returned
         when many may eventually match. I (Grahn) am a bit
@@ -332,6 +357,10 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         # mangle the spawn so we test expect_exact() instead
         p.expect = p.expect_exact
         self._ordering(p)
+
+        # Termination of the SpawnSocket is slow. We have to wait to prevent the failure of the next test.
+        if wexpect.spawn_class_name == 'SpawnSocket':
+            p.wait()
 
     def _greed(self, expect):
         # End at the same point: the one with the earliest start should win
