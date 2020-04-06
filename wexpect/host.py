@@ -285,9 +285,10 @@ class SpawnBase:
                 self.disconnect_from_child()
                 if self.safe_exit:
                     self.wait()
-        except Exception:
-            traceback.print_exc()
-            logger.warning(traceback.format_exc())
+        except Exception: # pragma: no cover
+            # I hope this code is unreachable...
+            logger.error(traceback.format_exc())
+            raise
 
     def __str__(self):
         """This returns a human-readable string that represents the state of
@@ -354,10 +355,12 @@ class SpawnBase:
         # Deep copy needed to prevent cycle-to-cycle growth. See #31 for more details.
         environ = os.environ.copy()
 
-        if getattr(sys, 'frozen', False):
+        if getattr(sys, 'frozen', False): # pragma: no cover
             '''Runing in a PyInstaller bundle:
             Pyinstaller has no explicit python interpreter, so console-reader should be bundled
             also, and host should call it as a windows executable.
+
+            This code cannot be covered during tests, because it runs only in bundled way.
 
             https://pyinstaller.readthedocs.io/en/stable/runtime-information.html#using-sys-executable-and-sys-argv-0
             https://github.com/pyinstaller/pyinstaller/issues/822
@@ -428,7 +431,7 @@ class SpawnBase:
         if not self.isalive(timeout = self.delayafterterminate):
             return True
 
-        return False
+        raise ExceptionPexpect("Child has not been terminated even after it was killed.")
 
     def isalive(self, trust_console=True, timeout=0):
         """True if the child is still alive, false otherwise"""
@@ -522,7 +525,7 @@ class SpawnBase:
 
         return self
 
-    def read_nonblocking(self, size=1):
+    def read_nonblocking(self, size=1): # pragma: no cover
         """Virtual definition
         """
         raise NotImplementedError
@@ -610,17 +613,17 @@ class SpawnBase:
 
         return self._send_impl(s)
 
-    def _send_impl(self, s):
+    def _send_impl(self, s): # pragma: no cover
         """Virtual definition
         """
         raise NotImplementedError
 
-    def connect_to_child(self):
+    def connect_to_child(self): # pragma: no cover
         """Virtual definition
         """
         raise NotImplementedError
 
-    def disconnect_from_child(self):
+    def disconnect_from_child(self): # pragma: no cover
         """Virtual definition
         """
         raise NotImplementedError

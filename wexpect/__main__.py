@@ -10,16 +10,6 @@ import wexpect.wexpect_util as wexpect_util
 logger = logging.getLogger('wexpect')
 logger.info('Hello')
 
-def str2bool(v):
-    if isinstance(v, bool):
-       return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
 def main():
     try:
         parser = argparse.ArgumentParser(description='Wexpect: executable automation for Windows.')
@@ -61,7 +51,7 @@ def main():
             path=command, host_pid=args.host_pid, codepage=args.codepage, port=args.port,
             window_size_x=args.window_size_x, window_size_y=args.window_size_y,
             buffer_size_x=args.buffer_size_x, buffer_size_y=args.buffer_size_y,
-            local_echo=str2bool(args.local_echo), interact=str2bool(args.interact))
+            local_echo=wexpect_util.str2bool(args.local_echo), interact=wexpect_util.str2bool(args.interact))
 
         logger.info(f'Exiting with status: {cons.child_exitstatus}')
         sys.exit(cons.child_exitstatus)

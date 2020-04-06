@@ -463,8 +463,9 @@ class ConsoleReaderSocket(ConsoleReaderBase):
             self.connection, client_address = self.sock.accept()
             self.connection.settimeout(.01)
             logger.info(f'Client connected: {client_address}')
-        except Exception:
-            logger.error(f"Port: {self.port}")
+        except Exception as e:  # pragma: no cover
+            # I hope this code is unreachable.
+            logger.error(f"Port: {self.port} {e}")
             raise
 
     def close_connection(self):

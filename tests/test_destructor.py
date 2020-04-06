@@ -52,6 +52,18 @@ class TestCaseDestructor(PexpectTestCase.PexpectTestCase):
         p3 = wexpect.spawn('ls', port=4323)
         p4 = wexpect.spawn('ls', port=4324)
 
+    @unittest.skipIf(wexpect.spawn_class_name == 'legacy_wexpect', "legacy unsupported")
+    def test_failed_termination(self):
+        "Test failed termination."
+        child = wexpect.spawn('cat')
+        delayafterterminate_orig = child.delayafterterminate
+        child.delayafterterminate =.1
+
+        msg = 'Child has not been terminated even after it was killed.'
+        with self.assertRaisesRegex(wexpect.ExceptionPexpect, msg):
+            child.terminate()
+
+        child.isalive(timeout = delayafterterminate_orig)
 
 if __name__ == '__main__':
     unittest.main()

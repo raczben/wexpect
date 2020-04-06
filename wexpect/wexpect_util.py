@@ -27,7 +27,20 @@ SPAM = 5
 logging.addLevelName(SPAM, "SPAM")
 
 
-def spam(self, message, *args, **kws):
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:  # pragma: no cover
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+def spam(self, message, *args, **kws):  # pragma: no cover
+    '''Very verbose debug dunction.
+    '''
     if self.isEnabledFor(SPAM):
         # Yes, logger takes its '*args' as 'args'.
         self._log(SPAM, message, args, **kws)
@@ -36,7 +49,9 @@ def spam(self, message, *args, **kws):
 logging.Logger.spam = spam
 
 
-def init_logger(logger=None):
+def init_logger(logger=None):  # pragma: no cover
+    '''Initializes the logger. I wont measure coverage for this debug method.
+    '''
     if logger is None:
         logger = logging.getLogger('wexpect')
     try:

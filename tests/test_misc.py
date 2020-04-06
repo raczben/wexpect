@@ -17,13 +17,14 @@ PYBIN = '"{}"'.format(sys.executable)
 
 class TestCaseMisc(PexpectTestCase.PexpectTestCase):
 
+    def test_wrong_command(self):
+        "Test raise of exception in case of wrong program"
+        with self.assertRaisesRegex(wexpect.ExceptionPexpect,"The command was not found.+"):
+            child = wexpect.spawn('unexecutable')
+
     def test_isatty(self):
         " Test isatty() is True after spawning process on most platforms. "
         child = wexpect.spawn('cat')
-        if not child.isatty() and sys.platform.lower().startswith('sunos'):
-            if hasattr(unittest, 'SkipTest'):
-                raise unittest.SkipTest("Not supported on this platform.")
-            return 'skip'
         assert child.isatty()
 
     def test_read(self):
