@@ -1,38 +1,6 @@
-"""Wexpect is a Windows variant of pexpect https://pexpect.readthedocs.io.
-
-Wexpect is a Python module for spawning child applications and controlling
-them automatically. Wexpect can be used for automating interactive applications
-such as ssh, ftp, passwd, telnet, etc. It can be used to a automate setup
-scripts for duplicating software package installations on different servers. It
-can be used for automated software testing. Wexpect is in the spirit of Don
-Libes' Expect, but Wexpect is pure Python. Other Expect-like modules for Python
-require TCL and Expect or require C extensions to be compiled. Wexpect does not
-use C, Expect, or TCL extensions.
-
-There are two main interfaces to Wexpect -- the function, run() and the class,
-spawn. You can call the run() function to execute a command and return the
-output. This is a handy replacement for os.system().
-
-For example::
-
-    wexpect.run('ls -la')
-
-The more powerful interface is the spawn class. You can use this to spawn an
-external child command and then interact with the child by sending lines and
-expecting responses.
-
-For example::
-
-    child = wexpect.spawn('scp foo myname@host.example.com:.')
-    child.expect('Password:')
-    child.sendline(mypassword)
-
-This works even for commands that ask for passwords or other input outside of
-the normal stdio streams.
-
-Spawn file is the main (aka. host) class of the wexpect. The user call Spawn, which
-start the console_reader as a subprocess, which starts the read child.
-
+"""Host module contains calsses and functions for the host application. These will spawn the child
+application. These host classes (and some util classes) are the interface for the user. Handle other
+modules as protected.
 """
 
 import time
@@ -88,8 +56,9 @@ def run(command, timeout=-1, withexitstatus=False, events=None, extra_args=None,
 
     The previous code can be replace with the following::
 
-    Examples
-    ========
+        run('scp foo user@example.com:.', events={'(?i)password': mypassword})
+
+    **Examples**
 
     Start the apache daemon on the local machine::
 
@@ -103,9 +72,6 @@ def run(command, timeout=-1, withexitstatus=False, events=None, extra_args=None,
 
         (command_output, exitstatus) = run ('ls -l /bin', withexitstatus=1)
 
-    Tricky Examples
-    ===============
-
     The following will run SSH and execute 'ls -l' on the remote machine. The
     password 'secret' will be sent if the '(?i)password' pattern is ever seen::
 
@@ -113,6 +79,12 @@ def run(command, timeout=-1, withexitstatus=False, events=None, extra_args=None,
 
     This will start mencoder to rip a video from DVD. This will also display
     progress ticks every 5 seconds as it runs. For example::
+
+        from wexpect import *
+        def print_ticks(d):
+            print d['event_count'],
+        run("mencoder dvd://1 -o video.avi -oac copy -ovc copy",
+            events={TIMEOUT:print_ticks}, timeout=5)
 
     The 'events' argument should be a dictionary of patterns and responses.
     Whenever one of the patterns is seen in the command out run() will send the

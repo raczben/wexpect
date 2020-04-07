@@ -4,8 +4,7 @@ Wexpect is a Python module for spawning child applications and controlling
 them automatically.
 
 console_reader Implements a virtual terminal, and starts the child program.
-The main wexpect.Spawn class connect to this class to reach the child's terminal.
-
+The main wexpect.spawn class connect to this class to reach the child's terminal.
 """
 
 import time

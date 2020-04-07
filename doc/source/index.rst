@@ -5,11 +5,6 @@ Wexpect version |version|
    :target: https://ci.appveyor.com/project/raczben/wexpect
    :align: right
    :alt: Build status
-   
-.. warning::
-    **UNDER CONSTRUCTION!!!**
-    Documentation is in a very preliminary state. I'm learning sphinx and
-    readthedocs.
 
 *Wexpect* is a Windows variant of `Pexpect <https://pexpect.readthedocs.io/en/stable/>`_
 Wexpect and Pexpect makes Python a better tool for controlling other applications.
@@ -41,7 +36,7 @@ To interract with a child process use :code:`spawn` method:
 
 .. code-block:: python
 
-  import wexpect 
+  import wexpect
   child = wexpect.spawn('cmd.exe')
   child.expect('>')
   child.sendline('ls')
@@ -50,11 +45,11 @@ To interract with a child process use :code:`spawn` method:
   child.sendline('exit')
 
 
-For more information see [examples](./examples) folder.
+For more information see `examples <https://github.com/raczben/wexpect/tree/master/examples>`_ folder.
 
 
 Contents:
- 
+
 
 .. toctree::
    :maxdepth: 2

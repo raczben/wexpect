@@ -24,7 +24,7 @@ them automatically.
 To interract with a child process use `spawn` method:
 
 ```python
-import wexpect 
+import wexpect
 child = wexpect.spawn('cmd.exe')
 child.expect('>')
 child.sendline('ls')
@@ -49,11 +49,11 @@ structured spawn class.
 But what is the difference between the old and new and what was the problem with the old?
 
 Generally, wexpect (both old and new) has three processes:
- 
- - *host* is our original pyton script/program, which want to launch the child.
+
+ - *host* is our original python script/program, which want to launch the child.
  - *console* is a process which started by the host, and launches the child. (This is a python script)
  - *child* is the process which want to be launced.
- 
+
 The child and the console has a common Windows console, distict from the host.
 
 The `legacy_wexpect`'s console is a thin script, almost do nothing. It initializes the Windows's
@@ -81,7 +81,7 @@ scripts for duplicating software package installations on different servers. It
 can be used for automated software testing. Wexpect is in the spirit of Don
 Libes' Expect, but Wexpect is pure Python. Other Expect-like modules for Python
 require TCL and Expect or require C extensions to be compiled. Wexpect does not
-use C, Expect, or TCL extensions. 
+use C, Expect, or TCL extensions.
 
 Original Pexpect should work on any platform that supports the standard Python pty module. While
 Wexpect works on Windows platforms. The Wexpect interface focuses on ease of use so that simple
@@ -117,13 +117,13 @@ See `after_test` section in [appveyor.yml](appveyor.yml) for more details.
 The wexpect uses [pbr](https://docs.openstack.org/pbr/latest/) for managing releasing procedures.
 The versioning is handled by the pbr. The *"master-version"* is the git tag. Pbr derives the package
 version from the git tags.
- 
+
 ## Basic behaviour
 
 Let's go through the example code:
 
 ```python
-import wexpect 
+import wexpect
 child = wexpect.spawn('cmd.exe')
 child.expect('>')
 child.sendline('ls')
@@ -139,13 +139,13 @@ child.sendline('exit')
 Call trace:
 
  - ::spawn                          
- - spawn_windows::__init__() 
+ - spawn_windows::__init__()
  - spawn_windows::_spawn()   
  - Wtty::spawn()              
  - Wtty::startChild()        
  - win32process.CreateProcess()  
- 
- 
+
+
 ### expect()
 
 `child.expect('>')`
@@ -153,14 +153,14 @@ Call trace:
 Call trace:
 
  - spawn_windows::expect()      
- - spawn_windows::expect_list() 
+ - spawn_windows::expect_list()
  - spawn_windows::expect_loop()  
  - spawn_windows::read_nonblocking()
  - Wtty::read_nonblocking()
  - Wtty::readConsoleToCursor()
  - Wtty::readConsole()           
  - __consout.ReadConsoleOutputCharacter()
-    
+
 
 ### sendline()
 
