@@ -54,6 +54,5 @@ else:
     except Exception:     # pragma: no cover
         __version__ = '0.0.1.unkowndev0'
 
-    __all__ = ['split_command_line', 'join_args', 'ExceptionPexpect', 'EOF', 'TIMEOUT',
-               'ConsoleReaderSocket', 'ConsoleReaderPipe', 'spawn', 'SpawnSocket', 'SpawnPipe',
-               'run', 'searcher_string', 'searcher_re', '__version__', 'spawn_class_name']
+    __all__ = ['ExceptionPexpect', 'EOF', 'TIMEOUT', 'ConsoleReaderSocket', 'ConsoleReaderPipe',
+               'spawn', 'SpawnSocket', 'SpawnPipe', 'run', '__version__', 'spawn_class_name']
