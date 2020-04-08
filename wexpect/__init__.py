@@ -6,7 +6,7 @@ import pkg_resources
 try:
     spawn_class_name = os.environ['WEXPECT_SPAWN_CLASS']
 except KeyError:
-    spawn_class_name = 'legacy_wexpect'
+    spawn_class_name = 'SpawnPipe'
 
 if spawn_class_name == 'legacy_wexpect':
     from .legacy_wexpect import ExceptionPexpect
