@@ -13,12 +13,9 @@ Refactor
 
 The original wexpect was a monolite, one-file code, with several structural weaknesses. This leads
 me to rewrite the whole code. The first variant of the new structure is delivered with
-`v3.2.0 <https://pypi.org/project/wexpect/3.2.0/>`_.
-
-.. Note::
-    The default is the old variant (:code:`legacy_wexpect`), to use the new you need to set the
-    :code:`WEXPECT_SPAWN_CLASS` environment variable to :code:`SpawnPipe` or :code:`SpawnSocket`, which
-    are the two new structured spawn classes.
+`v3.2.0 <https://pypi.org/project/wexpect/3.2.0/>`_. (The default is the old variant
+(:code:`legacy_wexpect`) in v3.2.0. :code:`WEXPECT_SPAWN_CLASS` environment variable can choose the
+new-structured implementation.) Now :code:`SpawnPipe` is the default spawn class.
 
 Old vs new
 ^^^^^^^^^^
