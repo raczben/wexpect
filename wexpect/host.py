@@ -342,10 +342,20 @@ class SpawnBase:
                 raise Exception(
                     '`sys.frozen` found, but `sys._MEIPASS` not. Only pyinstaller is supported.'
                 )
-            dirname = os.path.dirname(sys.executable)
 
-            console_executable = os.path.join(dirname, '..', 'wexpect', 'wexpect.exe')
-            commandLine = f'"{console_executable}" {console_args}'
+            #
+            # Find wexpect executable (aka. console reader executable).
+            # User can point WEXPECT_EXECUTABLE environment variable to this executable, if this
+            # env/var isn't specified we will find executable `../wexpect/wexpect.exe` relativly
+            # from the host executable.
+            #
+            try:
+                wexpect_executable = os.environ['WEXPECT_EXECUTABLE']
+            except KeyError:
+                dirname = os.path.dirname(sys.executable)
+                wexpect_executable = os.path.join(dirname, '..', 'wexpect', 'wexpect.exe')
+
+            commandLine = f'"{wexpect_executable}" {console_args}'
 
         else:
             '''Runing in a normal python process
