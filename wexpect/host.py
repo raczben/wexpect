@@ -355,6 +355,10 @@ class SpawnBase:
                 dirname = os.path.dirname(sys.executable)
                 wexpect_executable = os.path.join(dirname, '..', 'wexpect', 'wexpect.exe')
 
+            if not os.path.exists(wexpect_executable):
+                logger.error(f'ExceptionPexpect: Wexpect executable: >>{wexpect_executable}<< not found.')
+                raise ExceptionPexpect(f'Wexpect executable: >>{wexpect_executable}<< not found.')
+
             commandLine = f'"{wexpect_executable}" {console_args}'
 
         else:
