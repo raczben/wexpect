@@ -56,6 +56,7 @@ Contents:
 
    api/index
    history
+   examples
 
 Wexpect is developed `on Github <http://github.com/raczben/wexpect>`_. Please
 report `issues <https://github.com/raczben/wexpect/issues>`_ there as well.
