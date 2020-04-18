@@ -881,11 +881,20 @@ class SpawnPipe(SpawnBase):
         # seconds.
         self.delayafterterminate = 2
 
-    def connect_to_child(self):
+    def connect_to_child(self, timeout=-1):
+        if timeout == -1:
+            timeout = self.timeout
+        if timeout is None:
+            end_time = float('inf')
+        else:
+            end_time = time.time() + timeout
+
         pipe_name = 'wexpect_{}'.format(self.console_pid)
         pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
         logger.debug(f'Trying to connect to pipe: {pipe_full_path}')
         while True:
+            if end_time < time.time():
+                raise TIMEOUT('Connect to child has been timed out.')
             try:
                 self.pipe = win32file.CreateFile(
                     pipe_full_path,

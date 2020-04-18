@@ -11,7 +11,7 @@ This project fixes these limitations, with example codes, tests, and pypi integr
 Refactor
 ^^^^^^^^
 
-The original wexpect was a monolite, one-file code, with several structural weaknesses. This leads
+The original wexpect was a monolith, one-file code, with several structural weaknesses. This leads
 me to rewrite the whole code. The first variant of the new structure is delivered with
 `v3.2.0 <https://pypi.org/project/wexpect/3.2.0/>`_. (The default is the old variant
 (:code:`legacy_wexpect`) in v3.2.0. :code:`WEXPECT_SPAWN_CLASS` environment variable can choose the
@@ -26,7 +26,7 @@ Generally, wexpect (both old and new) has three processes:
 
  - *host* is our original python script/program, which want to launch the child.
  - *console* is a process which started by the host, and launches the child. (This is a python script)
- - *child* is the process which want to be launced.
+ - *child* is the process which want to be launched.
 
 The child and the console has a common Windows console, distict from the host.
 

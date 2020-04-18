@@ -27,6 +27,7 @@ import socket
 from .wexpect_util import init_logger
 from .wexpect_util import EOF_CHAR
 from .wexpect_util import SIGNAL_CHARS
+from .wexpect_util import TIMEOUT
 
 #
 # System-wide constants
@@ -74,6 +75,8 @@ class ConsoleReaderBase:
         self.child_process = None
         self.child_pid = None
         self.enable_signal_chars = True
+        self.timeout = 30
+        self.child_exitstatus = None
 
         logger.info(f'ConsoleReader started. location {os.path.abspath(__file__)}')
 
@@ -504,17 +507,32 @@ class ConsoleReaderSocket(ConsoleReaderBase):
 
 
 class ConsoleReaderPipe(ConsoleReaderBase):
-    def create_connection(self, **kwargs):
+    def create_connection(self, timeout=-1, **kwargs):
+        if timeout == -1:
+            timeout = self.timeout
+        if timeout is None:
+            end_time = float('inf')
+        else:
+            end_time = time.time() + timeout
+
         pipe_name = 'wexpect_{}'.format(self.console_pid)
         pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
         logger.info('Start pipe server: %s', pipe_full_path)
         self.pipe = win32pipe.CreateNamedPipe(
             pipe_full_path,
             win32pipe.PIPE_ACCESS_DUPLEX,
-            win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
-            1, 65536, 65536, 0, None)
+            win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_NOWAIT,
+            1, 65536, 65536, 10000, None)
         logger.info("waiting for client")
-        win32pipe.ConnectNamedPipe(self.pipe, None)
+        while True:
+            if end_time < time.time():
+                raise TIMEOUT('Connect to child has been timed out.')
+            try:
+                win32pipe.ConnectNamedPipe(self.pipe, None)
+                break
+            except Exception as e:
+                logger.debug(e)
+                time.sleep(0.2)
         logger.info('got client')
 
     def close_connection(self):
