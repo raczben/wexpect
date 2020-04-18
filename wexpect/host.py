@@ -386,10 +386,12 @@ class SpawnBase:
         logger.info(f'Console starter command:{commandLine}')
 
         # start the console-reader
-        _, _, self.console_pid, __otid = win32process.CreateProcess(
-            None, commandLine, None, None, False, win32process.CREATE_NEW_CONSOLE, environ,
-            self.cwd, si
-        )
+        import subprocess
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+        proc = subprocess.Popen(commandLine,creationflags=subprocess.CREATE_NEW_CONSOLE, startupinfo=startupinfo)
+        self.console_pid = proc.pid
 
     def get_console_process(self, force=False):
         if force or self.console_process is None:
