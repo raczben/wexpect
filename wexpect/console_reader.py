@@ -97,10 +97,7 @@ class ConsoleReaderBase:
             logger.info('Spawning %s' % path)
             try:
                 self.initConsole()
-                si = win32process.GetStartupInfo()
-                self.__childProcess, _, self.child_pid, self.child_tid = win32process.CreateProcess(
-                    None, path, None, None, False, 0, None, None, si)
-                self.child_process = psutil.Process(self.child_pid)
+                self.child_process = psutil.Popen(path)
 
                 logger.info(f'Child pid: {self.child_pid}  Console pid: {self.console_pid}')
 
@@ -137,10 +134,12 @@ class ConsoleReaderBase:
                 logger.info('Host process has been died.')
                 return
 
-            self.child_exitstatus = win32process.GetExitCodeProcess(self.__childProcess)
-            if self.child_exitstatus != win32con.STILL_ACTIVE:
+            try:
+                self.child_exitstatus = self.child_process.wait(0)
                 logger.info(f'Child finished with code: {self.child_exitstatus}')
                 return
+            except psutil.TimeoutExpired:
+                pass
 
             consinfo = self.consout.GetConsoleScreenBufferInfo()
             cursorPos = consinfo['CursorPosition']
