@@ -515,8 +515,12 @@ class ConsoleReaderPipe(ConsoleReaderBase):
         else:
             end_time = time.time() + timeout
 
-        pipe_name = 'wexpect_{}'.format(self.console_pid)
-        pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
+        try:
+            self.pipe_name = kwargs['pipe_file_name']
+        except KeyError:
+            self.pipe_name = 'wexpect_{}'.format(self.console_pid)
+
+        pipe_full_path = r'\\.\pipe\{}'.format(self.pipe_name)
         logger.info('Start pipe server: %s', pipe_full_path)
         self.pipe = win32pipe.CreateNamedPipe(
             pipe_full_path,

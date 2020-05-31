@@ -30,6 +30,9 @@ def main():
         parser.add_argument('--port', type=int, help=
                             "If the console reader class is SpawnSocket, this option specifies the "
                             "socket's port.", default=False)
+        parser.add_argument('--pipe_file_name', type=str, help=
+                            "If the console reader class is SpawnPipe, this option specifies the "
+                            "pipe's name.", default=None)
 
         try:
             args = parser.parse_args()
@@ -48,7 +51,7 @@ def main():
         command = wexpect_util.join_args(args.command)
 
         cons = conole_reader_class(
-            path=command, host_pid=args.host_pid, codepage=args.codepage, port=args.port,
+            path=command, host_pid=args.host_pid, codepage=args.codepage, port=args.port, pipe_file_name=args.pipe_file_name,
             window_size_x=args.window_size_x, window_size_y=args.window_size_y,
             buffer_size_x=args.buffer_size_x, buffer_size_y=args.buffer_size_y,
             local_echo=wexpect_util.str2bool(args.local_echo), interact=wexpect_util.str2bool(args.interact))

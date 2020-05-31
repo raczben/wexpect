@@ -14,6 +14,8 @@ import sys
 import os
 import logging
 import signal
+import string
+import random
 
 # platform does not define VEOF so assume CTRL-D
 EOF_CHAR = b'\x04'
@@ -27,7 +29,19 @@ SPAM = 5
 logging.addLevelName(SPAM, "SPAM")
 
 
+def generate_id(size=6, chars=string.ascii_uppercase + string.digits):
+    '''Generates random string, to use as ID.
+    Using random string as pipe's filename gives a workaround to #26
+    From: https://stackoverflow.com/a/2257449/2506522
+    '''
+    return ''.join(random.choice(chars) for _ in range(size))
+
+
 def str2bool(v):
+    '''Help parsing boolean values with argparse
+    From: https://stackoverflow.com/a/43357954/2506522
+
+    '''
     if isinstance(v, bool):
        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):

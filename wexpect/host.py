@@ -30,6 +30,7 @@ from .wexpect_util import join_args
 from .wexpect_util import init_logger
 from .wexpect_util import EOF_CHAR
 from .wexpect_util import SIGNAL_CHARS
+from .wexpect_util import generate_id
 
 logger = logging.getLogger('wexpect')
 
@@ -870,7 +871,8 @@ class SpawnPipe(SpawnBase):
                  **kwargs):
         self.pipe = None
         self.console_class_name = 'ConsoleReaderPipe'
-        self.console_class_parameters = {}
+        self.pipe_file_name = f'wexpect_{generate_id()}'
+        self.console_class_parameters = {'pipe_file_name': self.pipe_file_name}
 
         super().__init__(
             command=command, args=args, timeout=timeout, maxread=maxread,
@@ -889,8 +891,7 @@ class SpawnPipe(SpawnBase):
         else:
             end_time = time.time() + timeout
 
-        pipe_name = 'wexpect_{}'.format(self.console_pid)
-        pipe_full_path = r'\\.\pipe\{}'.format(pipe_name)
+        pipe_full_path = r'\\.\pipe\{}'.format(self.pipe_file_name)
         logger.debug(f'Trying to connect to pipe: {pipe_full_path}')
         while True:
             if end_time < time.time():
