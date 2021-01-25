@@ -147,11 +147,13 @@ def run(command, timeout=-1, withexitstatus=False, events=None, extra_args=None,
     else:
         return child_result
 
+        return s.decode(encoding=self.encoding, errors=self.decode_errors)
 
 class SpawnBase:
-    def __init__(self, command, args=[], timeout=30, maxread=60000, searchwindowsize=None,
-                 logfile=None, cwd=None, env=None, codepage=None, echo=True, safe_exit=True,
-                 interact=False, coverage_console_reader=False, **kwargs):
+    def __init__(self, command, args=[], timeout=30, encoding='UTF-8', decode_errors='ignore',
+                 maxread=60000, searchwindowsize=None, logfile=None, cwd=None, env=None,
+                 codepage=None, echo=True, safe_exit=True, interact=False,
+                 coverage_console_reader=False, **kwargs):
         """This starts the given command in a child process. This does all the
         fork/exec type of stuff for a pty. This is called by __init__. If args
         is empty then command will be parsed (split on spaces) and args will be
@@ -171,6 +173,8 @@ class SpawnBase:
         self.console_pid = None
         self.child_process = None
         self.child_pid = None
+        self.encoding = encoding
+        self.decode_errors = decode_errors
 
         self.safe_exit = safe_exit
         self.searcher = None
@@ -950,7 +954,7 @@ class SpawnPipe(SpawnBase):
                 logger.info("EOF: EOF character has been arrived")
                 s = s.split(EOF_CHAR)[0]
 
-            return s.decode()
+            return s.decode(encoding=self.encoding, errors=self.decode_errors)
         except pywintypes.error as e:
             if e.args[0] == winerror.ERROR_BROKEN_PIPE:   # 109
                 self.flag_eof = True
@@ -1077,7 +1081,7 @@ class SpawnSocket(SpawnBase):
         except socket.timeout:
             return ''
 
-        return s.decode()
+        return s.decode(encoding=self.encoding, errors=self.decode_errors)
 
 
 class searcher_re (object):
