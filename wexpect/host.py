@@ -950,7 +950,7 @@ class SpawnPipe(SpawnBase):
                 logger.info("EOF: EOF character has been arrived")
                 s = s.split(EOF_CHAR)[0]
 
-            return s.decode()
+            return s.decode(errors='ignore')
         except pywintypes.error as e:
             if e.args[0] == winerror.ERROR_BROKEN_PIPE:   # 109
                 self.flag_eof = True
