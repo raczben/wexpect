@@ -25,11 +25,16 @@ To interract with a child process use `spawn` method:
 
 ```python
 import wexpect
+
+prompt = '[A-Z]\:.+>'
+
 child = wexpect.spawn('cmd.exe')
-child.expect('>')
-child.sendline('ls')
-child.expect('>')
-print(child.before)
+child.expect(prompt)    # Wait for startup prompt
+
+child.sendline('dir')   # List the current directory
+child.expect(prompt)
+
+print(child.before)     # Print the list
 child.sendline('exit')
 ```
 
