@@ -13,7 +13,7 @@ them automatically.
 
  - you want to control any windows console application from python script.
  - you want to write test-automation script for a windows console application.
- - you want to automate your job by controlling multiple application parallel, synchoronusly.
+ - you want to automate your job by controlling multiple application parallel, synchronously.
 
 ## **Install**
 
