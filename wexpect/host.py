@@ -1,4 +1,4 @@
-"""Host module contains calsses and functions for the host application. These will spawn the child
+"""Host module contains classes and functions for the host application. These will spawn the child
 application. These host classes (and some util classes) are the interface for the user. Handle other
 modules as protected.
 """
