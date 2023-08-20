@@ -15,8 +15,8 @@ child.expect('>')
 print(child.before, end='')
 print(child.after, end='')
 
-# run list directory command
-child.sendline('ls')
+# run dir command to list directory contents
+child.sendline('dir')
 
 # Waiting for prompt
 child.expect('>')
