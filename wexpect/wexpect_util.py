@@ -7,7 +7,7 @@ wexpect util contains small functions, and classes, which are used in multiple c
 The command line argument parsers, and the Exceptions placed here.
 
 """
-
+import platform
 import re
 import traceback
 import sys
@@ -16,7 +16,10 @@ import logging
 import signal
 
 # platform does not define VEOF so assume CTRL-D
-EOF_CHAR = b'\x04'
+if platform.uname().system == "Windows":
+    EOF_CHAR = b'^D'
+else:
+    EOF_CHAR = b'\x04'
 
 SIGNAL_CHARS = {
     signal.SIGTERM: b'\x011',  # Device control 1
