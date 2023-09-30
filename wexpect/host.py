@@ -10,6 +10,7 @@ import shutil
 import re
 import traceback
 import types
+from pathlib import WindowsPath
 import psutil
 import signal
 import socket
@@ -206,6 +207,9 @@ class SpawnBase:
         # searchwindowsize: Anything before searchwindowsize point is preserved, but not searched.
         self.searchwindowsize = searchwindowsize
         self.interact_state = interact
+
+        if isinstance(self.cwd, WindowsPath):
+            self.cwd = str(self.cwd)
 
         logger.info(f'Spawn started. location {os.path.abspath(__file__)}')
 
