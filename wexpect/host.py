@@ -231,13 +231,13 @@ class SpawnBase:
             self.args = args[:]     # work with a copy
             self.args.insert(0, command)
             self.command = command
-
-        command_with_path = shutil.which(self.command)
-        if command_with_path is None:
-            logger.warning('The command was not found or was not executable: %s.' % self.command)
-            raise ExceptionPexpect(
-                'The command was not found or was not executable: %s.' % self.command)
-        self.command = command_with_path
+        #
+        # command_with_path = shutil.which(self.command)
+        # if command_with_path is None:
+        #     logger.warning('The command was not found or was not executable: %s.' % self.command)
+        #     raise ExceptionPexpect(
+        #         'The command was not found or was not executable: %s.' % self.command)
+        # self.command = command_with_path
         self.args[0] = self.command
 
         self.name = '<' + ' '.join(self.args) + '>'
