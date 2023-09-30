@@ -10,6 +10,7 @@ import shutil
 import re
 import traceback
 import types
+from pathlib import WindowsPath
 import psutil
 import signal
 import socket
@@ -207,6 +208,9 @@ class SpawnBase:
         self.searchwindowsize = searchwindowsize
         self.interact_state = interact
 
+        if isinstance(self.cwd, WindowsPath):
+            self.cwd = str(self.cwd)
+
         logger.info(f'Spawn started. location {os.path.abspath(__file__)}')
 
         # If command is an int type then it may represent a file descriptor.
@@ -231,13 +235,13 @@ class SpawnBase:
             self.args = args[:]     # work with a copy
             self.args.insert(0, command)
             self.command = command
-
-        command_with_path = shutil.which(self.command)
-        if command_with_path is None:
-            logger.warning('The command was not found or was not executable: %s.' % self.command)
-            raise ExceptionPexpect(
-                'The command was not found or was not executable: %s.' % self.command)
-        self.command = command_with_path
+        #
+        # command_with_path = shutil.which(self.command)
+        # if command_with_path is None:
+        #     logger.warning('The command was not found or was not executable: %s.' % self.command)
+        #     raise ExceptionPexpect(
+        #         'The command was not found or was not executable: %s.' % self.command)
+        # self.command = command_with_path
         self.args[0] = self.command
 
         self.name = '<' + ' '.join(self.args) + '>'
